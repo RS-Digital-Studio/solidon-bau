@@ -3028,17 +3028,21 @@ jobs:
           printf 'ARTIFACT_APP=%s\n' "$PWD/app-stage/Solidon3D.app" >> "$GITHUB_ENV"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/02-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-02.sh" > "$SOLIDON_STATE/protocol/02.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/02.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/02-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-02.sh" >> "$SOLIDON_STATE/protocol/02.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/02.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 02: Exit $status"
           echo "Schritt 02: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3171,17 +3175,21 @@ jobs:
           [ "$keys" = 2 ] || { echo "Die signierte App trägt $keys Berechtigungen statt genau zwei."; exit 1; }
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/03-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-03.sh" > "$SOLIDON_STATE/protocol/03.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/03.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/03-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-03.sh" >> "$SOLIDON_STATE/protocol/03.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/03.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 03: Exit $status"
           echo "Schritt 03: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3205,17 +3213,21 @@ jobs:
           spctl --assess --type execute --verbose=2 "$ARTIFACT_APP"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/04-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-04.sh" > "$SOLIDON_STATE/protocol/04.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/04.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/04-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-04.sh" >> "$SOLIDON_STATE/protocol/04.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/04.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 04: Exit $status"
           echo "Schritt 04: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3234,17 +3246,21 @@ jobs:
           shasum -a 256 "$archive" | tee "$archive.sha256"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/05-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-05.sh" > "$SOLIDON_STATE/protocol/05.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/05.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/05-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-05.sh" >> "$SOLIDON_STATE/protocol/05.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/05.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 05: Exit $status"
           echo "Schritt 05: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3835,17 +3851,21 @@ jobs:
           printf 'ARTIFACT_PACKAGE=%s\n' "$PWD/$package" >> "$GITHUB_ENV"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/02-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-02.sh" > "$SOLIDON_STATE/protocol/02.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/02.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/02-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-02.sh" >> "$SOLIDON_STATE/protocol/02.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/02.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 02: Exit $status"
           echo "Schritt 02: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3918,17 +3938,21 @@ jobs:
           mv "$signed" "$ARTIFACT_PACKAGE"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/03-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-03.sh" > "$SOLIDON_STATE/protocol/03.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/03.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/03-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-03.sh" >> "$SOLIDON_STATE/protocol/03.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/03.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 03: Exit $status"
           echo "Schritt 03: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3951,17 +3975,21 @@ jobs:
           spctl --assess --type install --verbose=2 "$ARTIFACT_PACKAGE"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/04-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-04.sh" > "$SOLIDON_STATE/protocol/04.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/04.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/04-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-04.sh" >> "$SOLIDON_STATE/protocol/04.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/04.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 04: Exit $status"
           echo "Schritt 04: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -3976,17 +4004,21 @@ jobs:
           shasum -a 256 "$ARTIFACT_PACKAGE" | tee "$ARTIFACT_PACKAGE.sha256"
           SOLIDON_STEP_END
           status=0
-          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/05-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-05.sh" > "$SOLIDON_STATE/protocol/05.log" 2>&1 &
+          timed_out=0
+          : > "$SOLIDON_STATE/protocol/05.log"
+          GITHUB_SHA="$SOLIDON_SHA" GITHUB_REF="$SOLIDON_REF" GITHUB_EVENT_NAME="$SOLIDON_EVENT" GITHUB_STEP_SUMMARY="$SOLIDON_STATE/protocol/05-summary.md" bash --noprofile --norc -eo pipefail "$SOLIDON_STATE/step-05.sh" >> "$SOLIDON_STATE/protocol/05.log" 2>&1 &
           pid=$!
           while kill -0 "$pid" 2>/dev/null && [ "$(date +%s)" -lt "$SOLIDON_DEADLINE" ]; do
             sleep 1
           done
           if kill -0 "$pid" 2>/dev/null; then
             echo "Frist des Jobs erreicht; Schritt beendet." >> "$SOLIDON_STATE/protocol/05.log"
+            timed_out=1
             pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
           wait "$pid" || status=$?
+          [ "$timed_out" = 0 ] || status=124
           echo "Schritt 05: Exit $status"
           echo "Schritt 05: Exit $status" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
