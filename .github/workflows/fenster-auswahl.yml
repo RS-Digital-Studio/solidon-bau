@@ -1,0 +1,208 @@
+# Erzeugt von tools/ci_relay.py aus .github/workflows/fenster-auswahl.yml.
+# Nicht von Hand bearbeiten; die Begründungen stehen in der Quelle.
+
+name: Fensterauswahl
+
+on:
+  workflow_call:
+    inputs:
+      parts:
+        description: "Teile je Plattform als JSON-Liste"
+        type: string
+        required: false
+        default: "[0, 1, 2]"
+    secrets:
+      SOLIDON_BAU_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fensterauswahl-${{ github.event.inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  selection:
+    name: Fensterauswahl (${{ matrix.os }}, Teil ${{ matrix.shard }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-24.04, macos-latest]
+        shard: ${{ fromJSON(inputs.parts) }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      SHARD: ${{ matrix.shard }}
+      PARTS: ${{ inputs.parts }}
+    steps:
+      - name: Bauwerkzeug holen
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .solidon-bau
+          persist-credentials: false
+          sparse-checkout: werkzeug
+      - name: Python für das Bauwerkzeug
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - name: Bauwerkzeug einrichten
+        shell: bash
+        env:
+          SOLIDON_REPOSITORY: RS-Digital-Studio/solidon-bau
+          SOLIDON_EVENT: ${{ github.event.inputs.event }}
+          SOLIDON_REF: ${{ github.event.inputs.ref }}
+          SOLIDON_SHA: ${{ github.event.inputs.sha }}
+          SOLIDON_NONCE: ${{ github.event.inputs.nonce }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/solidon-bau"
+          mv .solidon-bau/werkzeug "$RUNNER_TEMP/solidon-bau"
+          rm -rf .solidon-bau
+          bash_path="$BASH"
+          if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
+          python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
+      - name: Quelle laden
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: solidon-quelle
+          path: ${{ runner.temp }}/solidon-ci/package
+      - name: Quelle entschlüsseln
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
+          SOLIDON_TARGET: .
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+          cache: pip
+          cache-dependency-path: |
+            constraints.txt
+            pyproject.toml
+      - name: Qt-Systembibliotheken und Vulkan (Linux)
+        if: runner.os == 'Linux'
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Qt-Systembibliotheken und Vulkan (Linux)"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libdbus-1-3 xvfb xauth \
+            libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers \
+            fonts-dejavu-core fontconfig \
+            libxkbcommon0 libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 \
+            libxcb-xinerama0 libxcb-xkb1 libxcb-sync1 libxcb-glx0
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '01', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Abhängigkeiten
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Abhängigkeiten"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python -m pip install -c constraints.txt -e ".[dev,geom,ui,brep]"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '02', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Konturverkettung übersetzen
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Konturverkettung übersetzen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/build_slice_core.py
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '03', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Ausgewählte Fenstertests
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Ausgewählte Fenstertests"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/auswahl.py" <<'PY'
+          import json
+          import os
+          import shlex
+          import subprocess
+          import sys
+
+          with open(os.environ["SOLIDON_ORDER"], encoding="utf-8") as order:
+              selection = json.load(order)["window_tests"]
+          parts = [part.strip() for part in selection.split(";") if part.strip()]
+          if not parts:
+              sys.exit("Keine Auswahl angegeben.")
+          shard, shards = int(os.environ["SHARD"]), len(json.loads(os.environ["PARTS"]))
+          mine = parts[shard::shards]
+          print(f"Teil {shard} von {shards}: {len(mine)} von {len(parts)} Auswahlen", flush=True)
+          failed = []
+          for part in mine:
+              print(f"::group::{part}", flush=True)
+              code = subprocess.call([sys.executable, "-m", "pytest", "-q", *shlex.split(part)])
+              print("::endgroup::", flush=True)
+              print(f"{part} -> Exit {code}", flush=True)
+              if code != 0:
+                  failed.append(f"{part} (Exit {code})")
+          if failed:
+              sys.exit("Rot: " + "; ".join(failed))
+          print(f"Grün: {len(mine)} Auswahlen")
+          PY
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" python "$RUNNER_TEMP/auswahl.py"
+          else
+            python "$RUNNER_TEMP/auswahl.py"
+          fi
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '04', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Protokoll verschließen
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: protokoll-fenster-auswahl-selection-${{ strategy.job-index }}
+          SOLIDON_IF_EMPTY: ignore
+        run: |
+          if [ -n "${SOLIDON_PYTHON:-}" ]; then
+            "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/protocol" <<'SOLIDON_PATHS'
+          ${{ runner.temp }}/solidon-ci/protocol/
+          SOLIDON_PATHS
+          fi
+      - name: Protokoll sichern
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: protokoll-fenster-auswahl-selection-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
+          if-no-files-found: ignore
+          retention-days: 1
+          overwrite: true

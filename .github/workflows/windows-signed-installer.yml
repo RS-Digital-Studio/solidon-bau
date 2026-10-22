@@ -1,0 +1,336 @@
+# Erzeugt von tools/ci_relay.py aus .github/workflows/windows-signed-installer.yml.
+# Nicht von Hand bearbeiten; die Begründungen stehen in der Quelle.
+
+name: Windows-Installer aus signierter Anwendung
+run-name: Solidon ${{ inputs.event }} ${{ inputs.ref }} ${{ inputs.sha }} ${{ inputs.selection }} ${{ inputs.nonce }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      event:
+        description: "Ereignis im Quellrepository"
+        type: choice
+        options: [push, workflow_dispatch]
+        required: true
+      ref:
+        description: "Ref im Quellrepository"
+        type: string
+        required: true
+      sha:
+        description: "Commit im Quellrepository"
+        type: string
+        required: true
+      package_asset:
+        description: "Asset des verschlüsselten Pakets im Entwurf"
+        type: string
+        required: true
+      nonce:
+        description: "Kennung des Laufs, an die Paket und Artefakte gebunden sind"
+        type: string
+        required: true
+      selection:
+        description: "Herkunft der Fenster- und Slicerauswahl"
+        type: choice
+        options: [auto, manual]
+        required: true
+      build_run_id:
+        description: "Erfolgreicher Versions-Tag- oder manueller main-Lauf von build.yml mit Signierarchiv"
+        required: true
+        type: string
+      source_commit:
+        description: "Vollständige Commit-SHA des unveränderten Produkt-Quelllaufs"
+        required: true
+        type: string
+      app_version:
+        description: "Version der gebauten und lokal signierten Anwendung"
+        required: true
+        type: string
+      signed_app_sha256:
+        description: "SHA-256 der lokal signierten Solidon3D.exe"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: solidon-bau
+  cancel-in-progress: false
+
+jobs:
+  quelle:
+    name: Quelle holen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - name: Paket aus dem Entwurf laden
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOLIDON_ASSET: ${{ inputs.package_asset }}
+        run: |
+          set -euo pipefail
+          [[ "$SOLIDON_ASSET" =~ ^[1-9][0-9]*$ ]] || { echo "Ungültige Paketnummer."; exit 1; }
+          folder="$RUNNER_TEMP/solidon-package"
+          mkdir -p "$folder"
+          gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$SOLIDON_ASSET" > "$folder/source.box"
+          echo "Paket: $(wc -c < "$folder/source.box" | tr -d ' ') Byte"
+      - name: Paket an die Jobs geben
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: solidon-quelle
+          path: ${{ runner.temp }}/solidon-package/source.box
+          if-no-files-found: error
+          retention-days: 1
+
+  installer:
+    needs: [quelle]
+    permissions:
+      contents: read
+      actions: read
+    if: github.event.inputs.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Bauwerkzeug holen
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .solidon-bau
+          persist-credentials: false
+          sparse-checkout: werkzeug
+      - name: Python für das Bauwerkzeug
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - name: Bauwerkzeug einrichten
+        shell: bash
+        env:
+          SOLIDON_REPOSITORY: RS-Digital-Studio/solidon-bau
+          SOLIDON_EVENT: ${{ github.event.inputs.event }}
+          SOLIDON_REF: ${{ github.event.inputs.ref }}
+          SOLIDON_SHA: ${{ github.event.inputs.sha }}
+          SOLIDON_NONCE: ${{ github.event.inputs.nonce }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/solidon-bau"
+          mv .solidon-bau/werkzeug "$RUNNER_TEMP/solidon-bau"
+          rm -rf .solidon-bau
+          bash_path="$BASH"
+          if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
+          python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
+      - name: Quelle laden
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: solidon-quelle
+          path: ${{ runner.temp }}/solidon-ci/package
+      - name: Quelle entschlüsseln
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
+          SOLIDON_TARGET: .
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - name: Abhängigkeit der vorhandenen Übergabeprüfer
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Abhängigkeit der vorhandenen Übergabeprüfer"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python -m pip install -c constraints.txt packaging
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '01', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Prüfumgebung der geänderten Orchestrierung
+        if: github.event.inputs.sha != inputs.source_commit
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Prüfumgebung der geänderten Orchestrierung"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python -m pip install -c constraints.txt -e ".[dev,geom,ui,brep]"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '02', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Tests der geänderten Orchestrierung
+        if: github.event.inputs.sha != inputs.source_commit
+        shell: python
+        env:
+          QT_QPA_PLATFORM: offscreen
+          SOLIDON_STEP_NAME: "Tests der geänderten Orchestrierung"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          python -m pytest -q -p no:cacheprovider tests/test_sign_release.py tests/test_windows_signed_installer.py tests/test_ci_relay.py tests/test_ci_relay_runs.py
+          if ($LASTEXITCODE -ne 0) { throw "Die Tests der geänderten Signierorchestrierung sind nicht grün; kein Installer." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '03', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Herkunft, Archiv und lokale Anwendungssignatur prüfen
+        shell: python
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.build_run_id }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          SOURCE_VERSION: ${{ inputs.app_version }}
+          SIGNED_APP_SHA256: ${{ inputs.signed_app_sha256 }}
+          SOLIDON_STEP_NAME: "Herkunft, Archiv und lokale Anwendungssignatur prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          python -m tools.windows_signed_installer prepare --work "$env:RUNNER_TEMP/windows-installer"
+          if ($LASTEXITCODE -ne 0) { throw "Die gebundene signierte Anwendung wurde nicht freigegeben." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '04', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Festen Inno-Setup-7-Compiler bereitstellen
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Festen Inno-Setup-7-Compiler bereitstellen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          # Unveränderliche Herstellerveröffentlichung, SHA-256 am Asset geprüft.
+          $download = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
+          Invoke-WebRequest -Uri 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe' -OutFile $download
+          $digest = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($digest -ne '0362a383ed217d4c4239b5933866dd96d3eb2102737da92f80f6057a4b40df2f') { throw "Der Inno-Setup-Download hat eine andere Prüfsumme." }
+          $folder = Join-Path $env:RUNNER_TEMP 'inno-7'
+          $process = Start-Process -FilePath $download -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', ('/DIR="' + $folder + '"')) -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw "Inno Setup 7 konnte nicht eingerichtet werden." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '05', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Installer bauen und Rückgabe binden
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Installer bauen und Rückgabe binden"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          python -m tools.windows_signed_installer build --work "$env:RUNNER_TEMP/windows-installer" --compiler "$env:RUNNER_TEMP/inno-7/ISCC.exe" --output "$env:RUNNER_TEMP/windows-installer-output"
+          if ($LASTEXITCODE -ne 0) { throw "Der Windows-Installerbau ist nicht freigegeben." }
+          'Der Installer enthält die geprüfte signierte Anwendung. Die Setup-Datei selbst muss lokal signiert und anschließend erneut geprüft werden; dieses Artefakt wird nicht veröffentlicht.' >> $env:GITHUB_STEP_SUMMARY
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '06', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Installer still installieren und starten
+        timeout-minutes: 15
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Installer still installieren und starten"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          $setup = @(Get-ChildItem -LiteralPath "$env:RUNNER_TEMP/windows-installer-output" -Filter 'Solidon3D-Setup-*.exe' -File)
+          if ($setup.Count -ne 1) { throw "Nicht genau eine Setup-Datei in der Ausgabe." }
+          $target = Join-Path $env:RUNNER_TEMP 'Solidon3D-installed'
+          $log = Join-Path $env:RUNNER_TEMP 'setup-install.log'
+          $process = Start-Process -FilePath $setup[0].FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', '/NOICONS', ('/DIR="' + $target + '"'), ('/LOG="' + $log + '"')) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { Get-Content -LiteralPath $log -Tail 40; throw "Das Setup endete mit $($process.ExitCode)." }
+          python tools/check_frozen_start.py --executable (Join-Path $target 'Solidon3D.exe')
+          if ($LASTEXITCODE -ne 0) { throw "Der Starttest der installierten Anwendung ist rot; kein Installer zur Signatur." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '07', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Über die veröffentlichte Version aktualisieren und deinstallieren
+        timeout-minutes: 45
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Über die veröffentlichte Version aktualisieren und deinstallieren"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          $setup = @(Get-ChildItem -LiteralPath "$env:RUNNER_TEMP/windows-installer-output" -Filter 'Solidon3D-Setup-*.exe' -File)
+          if ($setup.Count -ne 1) { throw "Nicht genau eine Setup-Datei in der Ausgabe." }
+          python tools/check_windows_update.py --setup $setup[0].FullName --work (Join-Path $env:RUNNER_TEMP 'windows-update')
+          if ($LASTEXITCODE -ne 0) { throw "Update oder Deinstallation des Setups sind rot; kein Installer zur Signatur." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '08', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Installer ausschließlich zur lokalen Setupsignatur übergeben (verschließen)
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: solidon3d-windows-installer-signing-input
+          SOLIDON_IF_EMPTY: error
+          SOLIDON_HIDDEN: "false"
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/09" <<'SOLIDON_PATHS'
+          ${{ runner.temp }}/windows-installer-output/*
+          SOLIDON_PATHS
+      - name: Installer ausschließlich zur lokalen Setupsignatur übergeben
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: solidon3d-windows-installer-signing-input
+          path: ${{ runner.temp }}/solidon-ci/boxes/09/
+          if-no-files-found: error
+          retention-days: 1
+      - name: Protokoll verschließen
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: protokoll-windows-signed-installer-installer-${{ strategy.job-index }}
+          SOLIDON_IF_EMPTY: ignore
+        run: |
+          if [ -n "${SOLIDON_PYTHON:-}" ]; then
+            "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/protocol" <<'SOLIDON_PATHS'
+          ${{ runner.temp }}/solidon-ci/protocol/
+          SOLIDON_PATHS
+          fi
+      - name: Protokoll sichern
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: protokoll-windows-signed-installer-installer-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
+          if-no-files-found: ignore
+          retention-days: 1
+          overwrite: true

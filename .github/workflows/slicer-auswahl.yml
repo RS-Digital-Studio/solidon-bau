@@ -1,0 +1,371 @@
+# Erzeugt von tools/ci_relay.py aus .github/workflows/slicer-auswahl.yml.
+# Nicht von Hand bearbeiten; die Begründungen stehen in der Quelle.
+
+name: Slicerauswahl
+
+on:
+  workflow_call:
+    secrets:
+      SOLIDON_BAU_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: slicerauswahl-${{ github.event.inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  selection:
+    name: Slicerauswahl (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    env:
+      QT_QPA_PLATFORM: offscreen
+      OPENBLAS_NUM_THREADS: "1"
+      SOLIDON_REQUIRE_SLICERS: "1"
+    steps:
+      - name: Bauwerkzeug holen
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .solidon-bau
+          persist-credentials: false
+          sparse-checkout: werkzeug
+      - name: Python für das Bauwerkzeug
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - name: Bauwerkzeug einrichten
+        shell: bash
+        env:
+          SOLIDON_REPOSITORY: RS-Digital-Studio/solidon-bau
+          SOLIDON_EVENT: ${{ github.event.inputs.event }}
+          SOLIDON_REF: ${{ github.event.inputs.ref }}
+          SOLIDON_SHA: ${{ github.event.inputs.sha }}
+          SOLIDON_NONCE: ${{ github.event.inputs.nonce }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/solidon-bau"
+          mv .solidon-bau/werkzeug "$RUNNER_TEMP/solidon-bau"
+          rm -rf .solidon-bau
+          bash_path="$BASH"
+          if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
+          python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
+      - name: Quelle laden
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: solidon-quelle
+          path: ${{ runner.temp }}/solidon-ci/package
+      - name: Quelle entschlüsseln
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
+          SOLIDON_TARGET: .
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+          cache: pip
+          cache-dependency-path: |
+            constraints.txt
+            pyproject.toml
+      - name: Qt-Systembibliotheken, FUSE und Flatpak (Linux)
+        if: runner.os == 'Linux'
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Qt-Systembibliotheken, FUSE und Flatpak (Linux)"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libdbus-1-3 xvfb xauth dbus dbus-x11 \
+            libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers libopengl0 libglu1-mesa \
+            fonts-dejavu-core fontconfig \
+            libxkbcommon0 libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 \
+            libxcb-xinerama0 libxcb-xkb1 libxcb-sync1 libxcb-glx0 \
+            libfuse2t64 flatpak \
+            libwebkit2gtk-4.1-0 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '01', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Abhängigkeiten
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Abhängigkeiten"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python -m pip install -c constraints.txt -e ".[dev,geom,ui,brep]"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '02', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Programme der Auswahl
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Programme der Auswahl"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          programs=$(python tools/ci_selection.py --order-programs "$SOLIDON_ORDER")
+          if [ -z "$programs" ]; then
+            echo "::error::Die Auswahl verlangt keinen Slicer — sie enthält keinen Slicertest."
+            exit 1
+          fi
+          # Nur Programmnamen gehen nach $GITHUB_ENV: Ein Zeilenumbruch in der
+          # Eingabe setzte sonst weitere Umgebungsvariablen für jeden
+          # folgenden Schritt (BASH_ENV, PYTHONPATH …).
+          if ! [[ "$programs" =~ ^[a-z]+( [a-z]+)*$ ]]; then
+            echo "::error::Programme sind kleingeschriebene Namen, durch je ein Leerzeichen getrennt, etwa \"orcaslicer cura\"."
+            exit 1
+          fi
+          echo "Programme: $programs"
+          echo "PROGRAMS=$programs" >> "$GITHUB_ENV"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '03', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Slicer installieren (feste Version, Prüfsumme)
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Slicer installieren (feste Version, Prüfsumme)"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          arch=$(uname -m)
+          fetch() {  # Adresse, SHA-256, Ziel
+            # Echt ist eine Datei über ihre festgenagelte SHA-256, nicht über
+            # das Zertifikat des Servers: Läuft das eines Herstellers ab
+            # (Anycubic, 11.10.2026), lädt curl ohne TLS-Prüfung nach, und die
+            # Prüfsumme darunter weist jede andere Datei ab. Nur Code 60
+            # (Zertifikat nicht belegbar); jeder andere Fehler bleibt einer.
+            local code=0
+            curl -fL --retry 3 --retry-delay 5 -o "$3" "$1" || code=$?
+            if [ "$code" -eq 60 ]; then
+              echo "::warning::TLS-Prüfung für $1 fehlgeschlagen (curl 60); geladen wird ohne sie, echt nur über die SHA-256-Prüfung danach."
+              curl -fL --insecure --retry 3 --retry-delay 5 -o "$3" "$1"
+            elif [ "$code" -ne 0 ]; then
+              return "$code"
+            fi
+            if [ "$RUNNER_OS" = "macOS" ]; then
+              echo "$2  $3" | shasum -a 256 -c -
+            else
+              echo "$2  $3" | sha256sum --check --strict
+            fi
+          }
+          appimage() {  # Adresse, SHA-256 — nach /opt, unter dem Namen des Herstellers
+            name=$(basename "$1")
+            fetch "$1" "$2" "$RUNNER_TEMP/$name"
+            sudo install -m 0755 "$RUNNER_TEMP/$name" "/opt/$name"
+          }
+          dmg() {  # Adresse, SHA-256 — das Bündel nach /Applications
+            fetch "$1" "$2" "$RUNNER_TEMP/slicer.dmg"
+            # Die Lizenzabfrage mancher Abbilder will ein „Y“; yes endet am
+            # geschlossenen Rohr, und pipefail zählte das als Fehler.
+            { yes || true; } | hdiutil attach "$RUNNER_TEMP/slicer.dmg" -nobrowse -noverify -mountpoint /Volumes/slicer > /dev/null
+            # PrusaSlicer legt sein Bündel eine Ebene tiefer ab. find hört
+            # selbst beim ersten Treffer auf; ein `| head` endete unter
+            # pipefail mit 141, sobald find danach noch schrieb.
+            bundle=$(find /Volumes/slicer -maxdepth 2 -name '*.app' -prune -print -quit)
+            if [ -z "$bundle" ]; then
+              ls -la /Volumes/slicer
+              echo "::error::Kein Programmbündel im Abbild."
+              exit 1
+            fi
+            sudo cp -R "$bundle" /Applications/
+            hdiutil detach /Volumes/slicer
+            sudo xattr -dr com.apple.quarantine "/Applications/$(basename "$bundle")" 2>/dev/null || true
+            echo "installiert: /Applications/$(basename "$bundle")"
+          }
+          gh=https://github.com
+          for program in $PROGRAMS; do
+            echo "::group::$program ($RUNNER_OS $arch)"
+            case "$RUNNER_OS/$program" in
+              Linux/orcaslicer)
+                appimage $gh/SoftFever/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.4.2.AppImage \
+                  d12fb8c8eac1aecd2dfb6377acd48f994f8fa439ed5292fa532dd82880f029fd ;;
+              macOS/orcaslicer)
+                dmg $gh/SoftFever/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Mac_universal_V2.4.2.dmg \
+                  e15e7bb1b66214ec6e96b169b388004179c4f5f705effcdaf8c80d4992ee0366 ;;
+              Linux/prusaslicer)
+                # Seit 2.9 gibt es PrusaSlicer für Linux nur als Flatpak; die
+                # Commit-Kennung ist die Prüfsumme des Inhalts.
+                sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+                sudo flatpak install -y --noninteractive flathub com.prusa3d.PrusaSlicer
+                sudo flatpak update -y --noninteractive \
+                  --commit=bf3534e4ffc688bbaf625206f27f9333b1b8820d3425dae19d3083b47e08ce79 com.prusa3d.PrusaSlicer
+                test "$(flatpak info --show-commit com.prusa3d.PrusaSlicer)" = bf3534e4ffc688bbaf625206f27f9333b1b8820d3425dae19d3083b47e08ce79
+                flatpak info com.prusa3d.PrusaSlicer | sed -n 1,12p ;;
+              macOS/prusaslicer)
+                dmg $gh/prusa3d/PrusaSlicer/releases/download/version_2.9.6/PrusaSlicer-2.9.6.dmg \
+                  94fd7b8a9f87c9631e1c71739b15b184fc5f4c0ceabd69072f1c78f229a4fe40 ;;
+              Linux/cura)
+                appimage $gh/Ultimaker/Cura/releases/download/5.13.0/UltiMaker-Cura-5.13.0-linux-X64.AppImage \
+                  100f068127b2598167f00ba4db0e0699ded45adf97bbab2d22ff171a1e1ecc40 ;;
+              macOS/cura)
+                dmg $gh/Ultimaker/Cura/releases/download/5.13.0/UltiMaker-Cura-5.13.0-macos-ARM64.dmg \
+                  1483806486a19728bc0f363f847d75be3f179ea43c7f074bfc327f5b5c6e05ad ;;
+              Linux/bambustudio)
+                appimage $gh/bambulab/BambuStudio/releases/download/v02.08.02.61/BambuStudio_ubuntu24.04-v02.08.02.61-20260820225108.AppImage \
+                  d501b103fac5424513ec0e8d6bc145fb30719de2c7d94d7320d723740c81a7fd ;;
+              macOS/bambustudio)
+                dmg $gh/bambulab/BambuStudio/releases/download/v02.08.02.61/Bambu_Studio_mac-v02.08.02.61-20260820225108.dmg \
+                  cf648a95858fb630e1353c4987038df60d6caab693f18411fb95fb809f2d6926 ;;
+              Linux/elegooslicer)
+                appimage $gh/ELEGOO-3D/ElegooSlicer/releases/download/v1.5.3.5/ElegooSlicer_Linux_V1.5.3.5.AppImage \
+                  7b3b3f08e0d0d51bb472c85865d1be9b0c28385423daba1cb0c3b225d0101afc ;;
+              macOS/elegooslicer)
+                dmg $gh/ELEGOO-3D/ElegooSlicer/releases/download/v1.5.3.5/ElegooSlicer_Mac_arm64_V1.5.3.5.dmg \
+                  2ff9db9d398af552738f447ad63710d61407b69a7140457238d1507c978b5d9f ;;
+              Linux/crealityprint)
+                # 7.3.0 kam in zwei Bauständen (6149, 6151); gemessen ist 6149,
+                # wie am Arbeitsplatz (SLICER_DEVIATION in tests/test_print_time.py).
+                appimage $gh/CrealityOfficial/CrealityPrint/releases/download/v7.3.0/CrealityPrint-V7.3.0.6149-x86_64-Release.AppImage \
+                  313f7fa86cf3b670180171fb36a45d794ad065519a1d162e172de9bbe41879e0 ;;
+              macOS/crealityprint)
+                dmg $gh/CrealityOfficial/CrealityPrint/releases/download/v7.3.0/CrealityPrint-7.3.0.6149-macx-arm64-Release.dmg \
+                  c22d752d1350e54cfb13b3c8310166af4e115991591a0e0a14daf43d8a427007 ;;
+              Linux/anycubicslicernext)
+                # Das Paket aus der apt-Quelle des Herstellers, als Datei mit
+                # Prüfsumme statt über eine Quelle ohne Signatur.
+                fetch https://cdn-universe-slicer.anycubic.com/prod/pool/main/a/anycubicslicernext/AnycubicSlicerNext_linux-v2.0.0.5-20260913065625.deb \
+                  fe087a56014ed25cdfe4c3c293b517adaee0a9b2e1ded79f5e394b7968817c15 "$RUNNER_TEMP/anycubic.deb"
+                sudo apt-get install -y "$RUNNER_TEMP/anycubic.deb" ;;
+              macOS/anycubicslicernext)
+                dmg https://cdn.anycubic-cloud.anycubic.com/file/2026/09/04/dmg/178852197829378100/develop_859_2.0.0.3_arm64_20260904033804_AnycubicSlicerNext.dmg \
+                  de7f34ed119b59f3c541ab6593c1bb7986148d672810737f1bd62d774afa65e2 ;;
+              *)
+                echo "::error::Für $program gibt es auf $RUNNER_OS kein Installationsrezept."
+                exit 1 ;;
+            esac
+            echo "::endgroup::"
+          done
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '04', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Ausgewählte Slicertests
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Ausgewählte Slicertests"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/auswahl.py" <<'PY'
+          import json
+          import os
+          import shlex
+          import subprocess
+          import sys
+          import xml.etree.ElementTree as ElementTree
+          from pathlib import Path
+
+          with open(os.environ["SOLIDON_ORDER"], encoding="utf-8") as order:
+              selection = json.load(order)["slicer_tests"]
+          parts = [part.strip() for part in selection.split(";") if part.strip()]
+          if not parts:
+              sys.exit("Keine Auswahl angegeben.")
+          reports = Path(os.environ["RUNNER_TEMP"]) / "berichte"
+          reports.mkdir(exist_ok=True)
+          failed = []
+          for number, part in enumerate(parts):
+              report = reports / f"auswahl-{number}.xml"
+              print(f"::group::{part}", flush=True)
+              code = subprocess.call(
+                  [sys.executable, "-m", "pytest", "-q", "-rs", f"--junitxml={report}", *shlex.split(part)]
+              )
+              print("::endgroup::", flush=True)
+              # Grün ist erst, was gelaufen ist: kein Fall, oder ein übersprungener,
+              # ist kein Nachweis.
+              totals = {"tests": 0, "skipped": 0}
+              if report.is_file():
+                  for suite in ElementTree.parse(report).getroot().iter("testsuite"):
+                      for key in totals:
+                          totals[key] += int(suite.get(key, "0"))
+              print(f"{part} -> Exit {code}, {totals['tests']} Fälle, {totals['skipped']} übersprungen", flush=True)
+              if code != 0 or totals["tests"] == 0 or totals["skipped"]:
+                  failed.append(f"{part} (Exit {code}, {totals['tests']} Fälle, {totals['skipped']} übersprungen)")
+          if failed:
+              sys.exit("Rot: " + "; ".join(failed))
+          print(f"Grün: {len(parts)} Auswahlen")
+          PY
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" dbus-run-session -- python "$RUNNER_TEMP/auswahl.py"
+          else
+            python "$RUNNER_TEMP/auswahl.py"
+          fi
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '05', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Artefakt sichern (verschließen)
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: slicerauswahl-${{ matrix.os }}
+          SOLIDON_IF_EMPTY: warn
+          SOLIDON_HIDDEN: "false"
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/06" <<'SOLIDON_PATHS'
+          ${{ runner.temp }}/berichte/
+          SOLIDON_PATHS
+      - name: Artefakt sichern
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: slicerauswahl-${{ matrix.os }}
+          path: ${{ runner.temp }}/solidon-ci/boxes/06/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Protokoll verschließen
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: protokoll-slicer-auswahl-selection-${{ strategy.job-index }}
+          SOLIDON_IF_EMPTY: ignore
+        run: |
+          if [ -n "${SOLIDON_PYTHON:-}" ]; then
+            "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/protocol" <<'SOLIDON_PATHS'
+          ${{ runner.temp }}/solidon-ci/protocol/
+          SOLIDON_PATHS
+          fi
+      - name: Protokoll sichern
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: protokoll-slicer-auswahl-selection-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
+          if-no-files-found: ignore
+          retention-days: 1
+          overwrite: true
