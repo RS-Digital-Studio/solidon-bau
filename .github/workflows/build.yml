@@ -277,8 +277,8 @@ jobs:
           import sys
 
           script = r'''
-          sudo apt-get install -y --no-install-recommends php-cli php-sqlite3 php-mbstring
-          php -r 'foreach (["sodium", "pdo_sqlite", "mbstring"] as $extension) { if (!extension_loaded($extension)) { throw new RuntimeException("PHP-Erweiterung fehlt: " . $extension); } }'
+          sudo apt-get install -y --no-install-recommends php-cli php-sqlite3 php-mbstring php-curl
+          php -r 'foreach (["sodium", "pdo_sqlite", "mbstring", "curl"] as $extension) { if (!extension_loaded($extension)) { throw new RuntimeException("PHP-Erweiterung fehlt: " . $extension); } }'
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '02', '--shell', 'default']
@@ -2433,7 +2433,7 @@ jobs:
             "Inno Setup: ``$compiler`` ($innoVersion)" | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
           }
           $handoff = Get-Content -Raw -LiteralPath $env:SIGNING_HANDOFF | ConvertFrom-Json
-          & $compiler "/DAppName=Solidon3D" "/DAppVersion=$($handoff.app_version)" "/DAppVendor=RS Digital" "/DAppId=de.rsdigital.solidon3d" "/DAppUrl=https://solidon3d.de/" "/DProjectSuffix=.p3d" "/DPartFileSuffix=.solidon-part" "/DPartFileMimeType=application/vnd.solidon.part+json" "/DSourceDir=$(Join-Path $env:SIGNING_ROOT 'dist/Solidon3D')" "/DOutputDir=$(Join-Path $env:SIGNING_ROOT 'dist')" "/DLicenseFile=$(Join-Path $env:SIGNING_ROOT 'packaging/eula.txt')" "/DSetupIconFile=$(Join-Path $env:SIGNING_ROOT 'packaging/solidon3d.ico')" (Join-Path $env:SIGNING_ROOT "packaging/solidon3d.iss")
+          & $compiler "/DAppName=Solidon3D" "/DAppVersion=$($handoff.app_version)" "/DAppPublisher=RS-Digital" "/DAppId=de.rsdigital.solidon3d" "/DAppUrl=https://solidon3d.de/" "/DProjectSuffix=.p3d" "/DPartFileSuffix=.solidon-part" "/DPartFileMimeType=application/vnd.solidon.part+json" "/DSourceDir=$(Join-Path $env:SIGNING_ROOT 'dist/Solidon3D')" "/DOutputDir=$(Join-Path $env:SIGNING_ROOT 'dist')" "/DLicenseFile=$(Join-Path $env:SIGNING_ROOT 'packaging/eula.txt')" "/DSetupIconFile=$(Join-Path $env:SIGNING_ROOT 'packaging/solidon3d.ico')" (Join-Path $env:SIGNING_ROOT "packaging/solidon3d.iss")
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup konnte den Installer nicht bauen." }
           $setup = Join-Path $env:SIGNING_ROOT "dist/$($handoff.setup_filename)"
           if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "Die exakt benannte Setup-Datei fehlt." }
@@ -4413,8 +4413,8 @@ jobs:
           import sys
 
           script = r'''
-          sudo apt-get install -y --no-install-recommends php-cli php-sqlite3 php-mbstring
-          php -r 'foreach (["sodium", "pdo_sqlite", "mbstring"] as $extension) { if (!extension_loaded($extension)) { throw new RuntimeException("PHP-Erweiterung fehlt: " . $extension); } }'
+          sudo apt-get install -y --no-install-recommends php-cli php-sqlite3 php-mbstring php-curl
+          php -r 'foreach (["sodium", "pdo_sqlite", "mbstring", "curl"] as $extension) { if (!extension_loaded($extension)) { throw new RuntimeException("PHP-Erweiterung fehlt: " . $extension); } }'
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '02', '--shell', 'default']
