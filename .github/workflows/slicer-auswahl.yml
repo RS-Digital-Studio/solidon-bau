@@ -27,6 +27,7 @@ jobs:
         os: [ubuntu-24.04, macos-latest]
     env:
       QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: "1"
       OPENBLAS_NUM_THREADS: "1"
       SOLIDON_REQUIRE_SLICERS: "1"
     steps:
@@ -297,8 +298,13 @@ jobs:
           import shlex
           import subprocess
           import sys
+          import time
           import xml.etree.ElementTree as ElementTree
           from pathlib import Path
+
+          # Das Skript liegt in $RUNNER_TEMP; die Werkzeuge kommen aus dem Arbeitsbaum.
+          sys.path.insert(0, os.getcwd())
+          from tools.run_suite_isolated import BUDGET_SECONDS, stop_process_tree
 
           with open(os.environ["SOLIDON_ORDER"], encoding="utf-8") as order:
               selection = json.load(order)["slicer_tests"]
@@ -307,14 +313,47 @@ jobs:
               sys.exit("Keine Auswahl angegeben.")
           reports = Path(os.environ["RUNNER_TEMP"]) / "berichte"
           reports.mkdir(exist_ok=True)
+          # bau.py legt das Ende aller Schritte in SOLIDON_DEADLINE ab. Eine Minute davor endet
+          # die Schleife selbst und nennt, was nicht mehr lief; die Marke unten entsteht dann
+          # nicht, und der Lauf zählt nicht als Basis (CI-09).
+          deadline = float(os.environ.get("SOLIDON_DEADLINE") or "inf") - 60
+
+          def out_of_time(rest):
+              print(f"Frist des Jobs: {len(rest)} Auswahlen nicht zu Ende gefahren", flush=True)
+              for name in rest:
+                  print(f"  {name}", flush=True)
+              sys.exit("Rot: Die Frist des Jobs ist erreicht.")
+
           failed = []
           for number, part in enumerate(parts):
+              left = deadline - time.time()
+              if left <= 0:
+                  out_of_time(parts[number:])
+              # Je Auswahl die feste Grenze einer Datei der vollen Windows-Fenstergruppe;
+              # eine Laufzeittabelle für Slicertests gibt es nicht.
+              budget = BUDGET_SECONDS
               report = reports / f"auswahl-{number}.xml"
               print(f"::group::{part}", flush=True)
-              code = subprocess.call(
-                  [sys.executable, "-m", "pytest", "-q", "-rs", f"--junitxml={report}", *shlex.split(part)]
+              # Steht ein Test, schreibt faulthandler nach zwei Minuten den Stapel ins
+              # Protokoll; steht er über die Grenze, endet sein Prozessbaum, und die
+              # übrigen Auswahlen laufen.
+              process = subprocess.Popen(
+                  [sys.executable, "-u", "-X", "faulthandler", "-m", "pytest", "-v", "-rs",
+                   "-o", "faulthandler_timeout=120", f"--junitxml={report}", *shlex.split(part)],
+                  start_new_session=os.name != "nt",
               )
-              print("::endgroup::", flush=True)
+              try:
+                  code = process.wait(timeout=min(budget, left))
+              except subprocess.TimeoutExpired:
+                  problem = stop_process_tree(process)
+                  if problem:
+                      print(problem, flush=True)
+                  print("::endgroup::", flush=True)
+                  if left <= budget:
+                      out_of_time(parts[number:])
+                  code = f"nach {budget:.0f} s angehalten"
+              else:
+                  print("::endgroup::", flush=True)
               # Grün ist erst, was gelaufen ist: kein Fall, oder ein übersprungener,
               # ist kein Nachweis.
               totals = {"tests": 0, "skipped": 0}
@@ -325,6 +364,10 @@ jobs:
               print(f"{part} -> Exit {code}, {totals['tests']} Fälle, {totals['skipped']} übersprungen", flush=True)
               if code != 0 or totals["tests"] == 0 or totals["skipped"]:
                   failed.append(f"{part} (Exit {code}, {totals['tests']} Fälle, {totals['skipped']} übersprungen)")
+          # Vollständig gefahren, grün oder rot: Daran erkennt der nächste Lauf seine Basis
+          # (CI-09). Hält die Frist den Schritt an, entsteht die Marke nie.
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "auswahl-gefahren"), "w", encoding="utf-8") as done:
+              done.write(f"{len(parts)}\n")
           if failed:
               sys.exit("Rot: " + "; ".join(failed))
           print(f"Grün: {len(parts)} Auswahlen")
@@ -338,6 +381,22 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '05', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Auswahl vollständig gefahren
+        if: success() || failure()
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Auswahl vollständig gefahren"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          test -s "$RUNNER_TEMP/auswahl-gefahren"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '06', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Artefakt sichern (verschließen)
         if: always()
         shell: bash
@@ -347,7 +406,7 @@ jobs:
           SOLIDON_IF_EMPTY: warn
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/06" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/07" <<'SOLIDON_PATHS'
           ${{ runner.temp }}/berichte/
           SOLIDON_PATHS
       - name: Artefakt sichern
@@ -355,7 +414,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: slicerauswahl-${{ matrix.os }}
-          path: ${{ runner.temp }}/solidon-ci/boxes/06/
+          path: ${{ runner.temp }}/solidon-ci/boxes/07/
           if-no-files-found: warn
           retention-days: 1
       - name: Protokoll verschließen

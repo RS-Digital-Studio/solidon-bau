@@ -345,10 +345,13 @@ jobs:
           script = r'''
           set -euo pipefail
           mkdir -p reports/core
+          # Steht ein Fall, schreibt faulthandler nach zehn Minuten seinen Stapel ins
+          # Protokoll, auch aus einem Arbeiter von xdist. Zehn, nicht zwei wie in den
+          # Fenstergruppen: Kernfälle brauchen unter xdist mehrere Minuten.
           if [ "$RUNNER_OS" = "Linux" ]; then
-            run() { xvfb-run -a --server-args="-screen 0 1920x1080x24" python -m pytest -q "$@"; }
+            run() { xvfb-run -a --server-args="-screen 0 1920x1080x24" python -X faulthandler -m pytest -q -o faulthandler_timeout=600 "$@"; }
           else
-            run() { python -m pytest -q "$@"; }
+            run() { python -X faulthandler -m pytest -q -o faulthandler_timeout=600 "$@"; }
           fi
           # worksteal: Ein Worker, der fertig ist, nimmt Arbeit aus fremden
           # Schlangen; `load` ließ ihn am Ende warten. Lokal, Teil 0/3 mit -n 4,
@@ -4497,7 +4500,8 @@ jobs:
           script = r'''
           set -euo pipefail
           mkdir -p reports/latest
-          run() { xvfb-run -a --server-args="-screen 0 1920x1080x24" python -m pytest -q "$@"; }
+          # Hängerdiagnose wie im Suite-Job.
+          run() { xvfb-run -a --server-args="-screen 0 1920x1080x24" python -X faulthandler -m pytest -q -o faulthandler_timeout=600 "$@"; }
           run -n auto -m "not performance and not rendered and not windowed and not rendering" --durations=30 --durations-min=1 --junitxml=reports/latest/junit.xml
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
