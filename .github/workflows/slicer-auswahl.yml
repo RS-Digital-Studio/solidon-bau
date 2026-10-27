@@ -259,6 +259,17 @@ jobs:
               macOS/anycubicslicernext)
                 dmg https://cdn.anycubic-cloud.anycubic.com/file/2026/09/04/dmg/178852197829378100/develop_859_2.0.0.3_arm64_20260904033804_AnycubicSlicerNext.dmg \
                   de7f34ed119b59f3c541ab6593c1bb7986148d672810737f1bd62d774afa65e2 ;;
+              Linux/superslicer)
+                # 2.5.59.13 wie am Arbeitsplatz (tests/data/superslicer_3mf_keys.json),
+                # gebaut auf Ubuntu 20.04. Das AppImage bringt außer OCCTWrapper.so
+                # keine Bibliothek mit; GTK 3, libGL, X11 und D-Bus kommen vom Wirt
+                # (Schritt oben), FUSE 2 über libfuse2t64.
+                appimage $gh/supermerill/SuperSlicer/releases/download/2.5.59.13/SuperSlicer-ubuntu_20.04-2.5.59.13.AppImage \
+                  332dfbb7046fc12c1936900be2a85ce0f13031b381edf266f8c6d08d94730da4 ;;
+              macOS/superslicer)
+                # Das Bündel heißt SuperSlicer.app, sein Programm Contents/MacOS/SuperSlicer.
+                dmg $gh/supermerill/SuperSlicer/releases/download/2.5.59.13/SuperSlicer_2.5.59.13_macos_arm_240701.dmg \
+                  5e1358d36c4948177aca4caaccea9532cf357517ec9464284d9126f0a65677bb ;;
               *)
                 echo "::error::Für $program gibt es auf $RUNNER_OS kein Installationsrezept."
                 exit 1 ;;
