@@ -1386,6 +1386,16 @@ jobs:
           script = r'''
           $schemaUri = "https://raw.githubusercontent.com/CycloneDX/specification/55343ba19dee1785acf1ce9191540d5fd7b590db/schema/bom-1.6.schema.json"
           $schema = (Invoke-WebRequest -UseBasicParsing $schemaUri).Content
+          # bom-1.6 verweist auf spdx und jsf. pwsh 7.6 löst solche Verweise
+          # nicht mehr selbst auf; beide kommen vom selben Commit in die Registry
+          # von JsonSchema.Net, soweit der Läufer sie hat (ältere pwsh nicht).
+          if ('Json.Schema.SchemaRegistry' -as [type]) { foreach ($partUri in @(
+            "https://raw.githubusercontent.com/CycloneDX/specification/55343ba19dee1785acf1ce9191540d5fd7b590db/schema/spdx.schema.json",
+            "https://raw.githubusercontent.com/CycloneDX/specification/55343ba19dee1785acf1ce9191540d5fd7b590db/schema/jsf-0.82.schema.json"
+          )) {
+            $part = [Json.Schema.JsonSchema]::FromText((Invoke-WebRequest -UseBasicParsing $partUri).Content)
+            [Json.Schema.SchemaRegistry]::Global.Register($part)
+          } }
           $sbomPath = python -m tools.make_sbom --locate-artifact dist
           if ($LASTEXITCODE -ne 0) {
             throw "Die Stückliste liegt nicht genau einmal im Kundenartefakt. Paket neu bauen und PyInstaller-Datenliste prüfen."
