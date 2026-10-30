@@ -72,7 +72,7 @@ jobs:
           gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$SOLIDON_ASSET" > "$folder/source.box"
           echo "Paket: $(wc -c < "$folder/source.box" | tr -d ' ') Byte"
       - name: Paket an die Jobs geben
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-package/source.box
@@ -92,9 +92,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -112,7 +112,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -124,9 +124,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -177,7 +177,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-quality-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -203,9 +203,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -223,7 +223,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -235,9 +235,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -375,7 +375,7 @@ jobs:
           SOLIDON_PATHS
       - name: Kernprüfbericht sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-core-${{ matrix.os }}-${{ matrix.shard }}
           path: ${{ runner.temp }}/solidon-ci/boxes/07/
@@ -397,7 +397,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-suite-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -418,9 +418,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -438,7 +438,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -450,9 +450,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -535,7 +535,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-linux-keyring-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -563,9 +563,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -583,7 +583,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -595,9 +595,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -697,7 +697,7 @@ jobs:
           SOLIDON_PATHS
       - name: Fenstervertrags- und Rendererberichte sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-contracts-${{ matrix.os }}
           path: ${{ runner.temp }}/solidon-ci/boxes/05/
@@ -719,7 +719,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-window-contracts-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -745,9 +745,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -765,7 +765,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -777,9 +777,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -831,7 +831,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-selection-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -877,9 +877,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -897,7 +897,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -909,9 +909,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -976,7 +976,7 @@ jobs:
           SOLIDON_PATHS
       - name: Fenster- und Rendererberichte sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-windows-${{ matrix.shard }}
           path: ${{ runner.temp }}/solidon-ci/boxes/04/
@@ -998,7 +998,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-windows-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -1007,10 +1007,10 @@ jobs:
           overwrite: true
 
   macos-minimum:
-    name: macOS-Untergrenze (macos-15)
+    name: macOS-Untergrenze (macos-26)
     needs: [quelle]
     if: inputs.tests_only != true && (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch')
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 120
     env:
       QT_QPA_PLATFORM: offscreen
@@ -1022,9 +1022,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -1042,7 +1042,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -1054,9 +1054,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
             constraints.txt
@@ -1122,7 +1122,7 @@ jobs:
           SOLIDON_PATHS
       - name: Berichte der macOS-Untergrenze sichern
         if: always() && runner.os == 'macOS'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-macos-minimum
           path: ${{ runner.temp }}/solidon-ci/boxes/04/
@@ -1143,7 +1143,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-macos-minimum-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -1162,7 +1162,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-15]
+        os: [windows-latest, ubuntu-22.04, macos-26]
     env:
       MACOS_SIGNING_MODE: ${{ vars.MACOS_SIGNING_MODE || 'unsigned' }}
     steps:
@@ -1173,9 +1173,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -1193,7 +1193,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -1205,9 +1205,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
       - name: Signiermodus fail-closed prüfen
         shell: python
@@ -1500,7 +1500,7 @@ jobs:
           SOLIDON_PATHS
       - name: Signiereingang übergeben (Windows)
         if: runner.os == 'Windows'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-windows-signing-input
           path: ${{ runner.temp }}/solidon-ci/boxes/14/
@@ -1682,7 +1682,7 @@ jobs:
           SOLIDON_PATHS
       - name: Archiv hochladen (Linux)
         if: runner.os == 'Linux'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-linux-release-input
           path: ${{ runner.temp }}/solidon-ci/boxes/23/
@@ -1710,7 +1710,7 @@ jobs:
           SOLIDON_PATHS
       - name: macOS-App-Eingang übergeben
         if: runner.os == 'macOS'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-app-input-${{ runner.arch }}
           path: ${{ runner.temp }}/solidon-ci/boxes/24/
@@ -1731,7 +1731,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-package-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -1755,9 +1755,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -1775,7 +1775,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -1787,11 +1787,11 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Linux-Baum laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-linux-release-input
           path: ${{ runner.temp }}/solidon-ci/loaded/01
@@ -1921,7 +1921,7 @@ jobs:
           dist/*.flatpak.sha256
           SOLIDON_PATHS
       - name: Flatpak intern übergeben
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-linux-flatpak-input
           path: ${{ runner.temp }}/solidon-ci/boxes/07/
@@ -1942,7 +1942,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-linux-flatpak-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -1970,9 +1970,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -1990,7 +1990,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -2002,9 +2002,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Grafik und Bildschirm des Prüfrechners
         shell: python
         env:
@@ -2023,7 +2023,7 @@ jobs:
                      '--number', '01', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: AppImage laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-linux-release-input
           path: ${{ runner.temp }}/solidon-ci/loaded/02
@@ -2077,7 +2077,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-linux-release-start-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -2101,9 +2101,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -2121,7 +2121,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -2133,9 +2133,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Abhängigkeiten der Zielumgebung
         shell: python
         env:
@@ -2152,7 +2152,7 @@ jobs:
                      '--number', '01', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Äußere Linux-Pakete und App-Baum laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-linux-release-input
           path: ${{ runner.temp }}/solidon-ci/loaded/02
@@ -2165,7 +2165,7 @@ jobs:
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" unpack --from "$RUNNER_TEMP/solidon-ci/loaded/02" --target "$SOLIDON_TARGET"
       - name: Flatpak laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-linux-flatpak-input
           path: ${{ runner.temp }}/solidon-ci/loaded/03
@@ -2267,7 +2267,7 @@ jobs:
           release-download/*.flatpak.sha256
           SOLIDON_PATHS
       - name: Geprüfte Linux-Pakete veröffentlichen
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-linux
           path: ${{ runner.temp }}/solidon-ci/boxes/05/
@@ -2288,7 +2288,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-linux-release-check-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -2312,9 +2312,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -2332,7 +2332,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Unsignierten App-Baum laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-windows-signing-input
           path: ${{ runner.temp }}/solidon-ci/loaded/01
@@ -2458,7 +2458,7 @@ jobs:
                      '--number', '03', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -2470,9 +2470,9 @@ jobs:
           SOLIDON_TARGET: source
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Installer still installieren und starten
         timeout-minutes: 15
         shell: python
@@ -2523,7 +2523,7 @@ jobs:
           ${{ env.ARTIFACT_SETUP }}.sha256
           SOLIDON_PATHS
       - name: Unsignierten finalen Installer intern übergeben
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-windows-final-private
           path: ${{ runner.temp }}/solidon-ci/boxes/06/
@@ -2544,7 +2544,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-windows-installer-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -2568,9 +2568,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -2588,7 +2588,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -2600,9 +2600,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Abhängigkeiten der Zielumgebung
         shell: python
         env:
@@ -2619,7 +2619,7 @@ jobs:
                      '--number', '01', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Finalen Installer laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-windows-final-private
           path: ${{ runner.temp }}/solidon-ci/loaded/02
@@ -2632,7 +2632,7 @@ jobs:
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" unpack --from "$RUNNER_TEMP/solidon-ci/loaded/02" --target "$SOLIDON_TARGET"
       - name: Unsignierten App-Baum laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-windows-signing-input
           path: ${{ runner.temp }}/solidon-ci/loaded/03
@@ -2690,7 +2690,7 @@ jobs:
           release-download/*
           SOLIDON_PATHS
       - name: Geprüften Installer veröffentlichen
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-setup-windows
           path: ${{ runner.temp }}/solidon-ci/boxes/05/
@@ -2711,7 +2711,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-windows-release-check-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -2986,7 +2986,7 @@ jobs:
           } >> "$GITHUB_ENV"
           echo "Kistenwerkzeug bereit."
       - name: Gebundenen App-Baum laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-app-input-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/01
@@ -3314,7 +3314,7 @@ jobs:
           rm -f "$SOLIDON_STATE/06.tar"
           echo "Artefakt verschlossen: ${#files[@]} Dateien"
       - name: Freigegebenen App-Baum intern übergeben
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-app-signed-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/boxes/06/
@@ -3335,7 +3335,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-macos-app-sign-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -3372,9 +3372,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -3392,7 +3392,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -3404,12 +3404,12 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Signierten App-Baum laden
         if: env.MACOS_SIGNING_MODE != 'unsigned'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-app-signed-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/01
@@ -3424,7 +3424,7 @@ jobs:
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" unpack --from "$RUNNER_TEMP/solidon-ci/loaded/01" --target "$SOLIDON_TARGET"
       - name: Unsignierten App-Baum laden
         if: env.MACOS_SIGNING_MODE == 'unsigned'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-app-input-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/02
@@ -3506,7 +3506,7 @@ jobs:
           SOLIDON_PATHS
       - name: Unsignierten finalen Mac-Bau intern übergeben
         if: env.MACOS_SIGNING_MODE == 'unsigned'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-final-private-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/boxes/05/
@@ -3534,7 +3534,7 @@ jobs:
           SOLIDON_PATHS
       - name: Mac-Installer zur Signierung übergeben
         if: env.MACOS_SIGNING_MODE != 'unsigned'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-installer-input-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/boxes/06/
@@ -3555,7 +3555,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-macos-package-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -3827,7 +3827,7 @@ jobs:
           } >> "$GITHUB_ENV"
           echo "Kistenwerkzeug bereit."
       - name: Gebundenen Installer laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-installer-input-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/01
@@ -4072,7 +4072,7 @@ jobs:
           rm -f "$SOLIDON_STATE/06.tar"
           echo "Artefakt verschlossen: ${#files[@]} Dateien"
       - name: Finalen Mac-Bau intern übergeben
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-final-private-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/boxes/06/
@@ -4093,7 +4093,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-macos-installer-sign-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -4130,9 +4130,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -4150,7 +4150,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -4162,9 +4162,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Abhängigkeiten der Zielumgebung
         shell: python
         env:
@@ -4181,7 +4181,7 @@ jobs:
                      '--number', '01', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Finalen Installer laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-final-private-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/02
@@ -4195,7 +4195,7 @@ jobs:
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" unpack --from "$RUNNER_TEMP/solidon-ci/loaded/02" --target "$SOLIDON_TARGET"
       - name: Signierten App-Baum laden
         if: env.MACOS_SIGNING_MODE != 'unsigned'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-app-signed-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/03
@@ -4210,7 +4210,7 @@ jobs:
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" unpack --from "$RUNNER_TEMP/solidon-ci/loaded/03" --target "$SOLIDON_TARGET"
       - name: Unsignierten App-Baum laden
         if: env.MACOS_SIGNING_MODE == 'unsigned'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon3d-macos-app-input-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/loaded/04
@@ -4307,7 +4307,7 @@ jobs:
           app-download/*
           SOLIDON_PATHS
       - name: Geprüften Mac-Bau veröffentlichen
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-${{ matrix.runner_arch }}
           path: ${{ runner.temp }}/solidon-ci/boxes/07/
@@ -4328,7 +4328,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-macos-release-check-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/
@@ -4357,9 +4357,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: werkzeug
       - name: Python für das Bauwerkzeug
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
       - name: Bauwerkzeug einrichten
         shell: bash
         env:
@@ -4377,7 +4377,7 @@ jobs:
           if command -v cygpath > /dev/null; then bash_path=$(cygpath -m "$BASH"); fi
           python "$RUNNER_TEMP/solidon-bau/bau.py" setup --bash "$bash_path" --minutes 120
       - name: Quelle laden
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: solidon-quelle
           path: ${{ runner.temp }}/solidon-ci/package
@@ -4389,9 +4389,9 @@ jobs:
           SOLIDON_TARGET: .
         run: |
           "$SOLIDON_PYTHON" "$SOLIDON_TOOL" source --package "$RUNNER_TEMP/solidon-ci/package" --target "$SOLIDON_TARGET"
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.14.8"
+          python-version: "3.14.10"
           cache: pip
       - name: Qt-Systembibliotheken
         shell: python
@@ -4549,7 +4549,7 @@ jobs:
           SOLIDON_PATHS
       - name: Versionsprüfbericht sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-latest-ubuntu
           path: ${{ runner.temp }}/solidon-ci/boxes/09/
@@ -4571,7 +4571,7 @@ jobs:
           fi
       - name: Protokoll sichern
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: protokoll-build-latest-${{ strategy.job-index }}
           path: ${{ runner.temp }}/solidon-ci/boxes/protocol/

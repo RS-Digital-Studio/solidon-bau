@@ -1,4 +1,4 @@
 # Erzeugt von tools/ci_relay.py aus constraints.txt.
 cryptography==50.0.2
 cffi==2.1.1
-pycparser==3.1
+pycparser==3.12
