@@ -553,7 +553,7 @@ jobs:
   window-contracts:
     name: Fensterverträge und Renderer (${{ matrix.os }})
     needs: [quelle]
-    if: inputs.tests_only != true && (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch' || (github.event.inputs.event == 'push' && github.event.inputs.ref == 'refs/heads/main'))
+    if: inputs.tests_only != true && (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch' || (github.event.inputs.event == 'push' && startsWith(github.event.inputs.ref, 'refs/heads/')))
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -666,7 +666,7 @@ jobs:
       - name: Fensterverträge und Rendererfälle
         shell: python
         env:
-          ON_MAIN: ${{ github.event.inputs.event == 'push' && github.event.inputs.ref == 'refs/heads/main' }}
+          ON_MAIN: ${{ github.event.inputs.event == 'push' && startsWith(github.event.inputs.ref, 'refs/heads/') }}
           SOLIDON_STEP_NAME: "Fensterverträge und Rendererfälle"
         run: |
           import os
@@ -737,7 +737,7 @@ jobs:
   selection:
     name: Fenster- und Slicertests zum Push
     needs: [quelle]
-    if: inputs.tests_only != true && (github.event.inputs.event == 'push' && github.event.inputs.ref == 'refs/heads/main')
+    if: inputs.tests_only != true && (github.event.inputs.event == 'push' && startsWith(github.event.inputs.ref, 'refs/heads/'))
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     outputs:
@@ -849,7 +849,7 @@ jobs:
   window-selection:
     name: Fensterauswahl zum Push
     needs: [quelle, selection]
-    if: inputs.tests_only != true && (github.event.inputs.event == 'push' && github.event.inputs.ref == 'refs/heads/main' && needs.selection.outputs.window_count != '0')
+    if: inputs.tests_only != true && (github.event.inputs.event == 'push' && startsWith(github.event.inputs.ref, 'refs/heads/') && needs.selection.outputs.window_count != '0')
     uses: ./.github/workflows/fenster-auswahl.yml
     with:
       parts: ${{ needs.selection.outputs.window_parts }}
@@ -859,7 +859,7 @@ jobs:
   slicer-selection:
     name: Slicerauswahl zum Push
     needs: [quelle, selection]
-    if: inputs.tests_only != true && (github.event.inputs.event == 'push' && github.event.inputs.ref == 'refs/heads/main' && needs.selection.outputs.slicer_count != '0')
+    if: inputs.tests_only != true && (github.event.inputs.event == 'push' && startsWith(github.event.inputs.ref, 'refs/heads/') && needs.selection.outputs.slicer_count != '0')
     uses: ./.github/workflows/slicer-auswahl.yml
     secrets:
       SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
