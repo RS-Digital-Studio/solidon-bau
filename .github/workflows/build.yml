@@ -356,7 +356,14 @@ jobs:
           # worksteal: Ein Worker, der fertig ist, nimmt Arbeit aus fremden
           # Schlangen; `load` ließ ihn am Ende warten. Lokal, Teil 0/3 mit -n 4,
           # beide Reihenfolgen: 354 → 206 s und 213 → 160 s (24.09.2026).
-          run -n auto --dist worksteal --ci-shard ${{ matrix.shard }}/3 -m "not performance and not rendered and not windowed and not rendering" --durations=30 --durations-min=1 --junitxml=reports/core/junit.xml
+          # Reißt der Steuerprozess ab („node down“), fehlen die FAILED-Zeilen; der
+          # Streaming-Bericht hält jedes Ereignis sofort fest und nennt die Roten
+          # trotzdem (tools/ci_stream.py, I-9). Mit „=“: getrennt hielte pytest den Pfad
+          # für einen Testpfad und lüde tests/conftest.py nicht, das die Option kennt.
+          status=0
+          run -n auto --dist worksteal --ci-shard ${{ matrix.shard }}/3 -m "not performance and not rendered and not windowed and not rendering" --durations=30 --durations-min=1 -rfE --junitxml=reports/core/junit.xml --report-stream=reports/core/stream.jsonl || status=$?
+          if [ "$status" -ne 0 ]; then python tools/ci_stream.py rot reports/core/stream.jsonl || true; fi
+          exit "$status"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '06', '--shell', 'bash']

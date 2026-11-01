@@ -149,91 +149,16 @@ jobs:
 
           script = r'''
           set -euo pipefail
-          cat > "$RUNNER_TEMP/auswahl.py" <<'PY'
-          import json
-          import os
-          import shlex
-          import subprocess
-          import sys
-          import time
-          from pathlib import Path
-
-          # Das Skript liegt in $RUNNER_TEMP; die Werkzeuge kommen aus dem Arbeitsbaum.
-          sys.path.insert(0, os.getcwd())
-          from tools.ci_shards import WINDOW_DURATIONS, balanced, read_durations
-          from tools.run_suite_isolated import BUDGET_SECONDS, PlannedFile, file_budget, stop_process_tree
-
-          with open(os.environ["SOLIDON_ORDER"], encoding="utf-8") as order:
-              selection = json.load(order)["window_tests"]
-          parts = [part.strip() for part in selection.split(";") if part.strip()]
-          if not parts:
-              sys.exit("Keine Auswahl angegeben.")
-          shard, shards = int(os.environ["SHARD"]), len(json.loads(os.environ["PARTS"]))
-          # Nach der Laufzeittabelle, längste zuerst auf den leichtesten Teil (RM-816), wie
-          # run_suite_isolated die volle Windows-Gruppe verteilt. Jeder Teil rechnet aus
-          # demselben Auftrag und derselben Tabelle denselben Plan (CI-01).
-          weights, fallback = read_durations(WINDOW_DURATIONS)
-          seconds = {part: weights.get(shlex.split(part)[0].split("::", 1)[0], fallback) for part in parts}
-          mine = list(balanced(seconds, shards)[shard])
-          numbers = {part: number for number, part in enumerate(parts)}
-          reports = Path(os.environ["RUNNER_TEMP"]) / "berichte"
-          reports.mkdir(exist_ok=True)
-          print(f"Teil {shard} von {shards}: {len(mine)} von {len(parts)} Auswahlen", flush=True)
-          # bau.py legt das Ende aller Schritte in SOLIDON_DEADLINE ab. Eine Minute davor endet
-          # die Schleife selbst und nennt, was nicht mehr lief; die Marke unten entsteht dann
-          # nicht, und der Lauf zählt nicht als Basis (CI-09).
-          deadline = float(os.environ.get("SOLIDON_DEADLINE") or "inf") - 60
-
-          def out_of_time(rest):
-              print(f"Frist des Jobs: {len(rest)} Auswahlen nicht zu Ende gefahren", flush=True)
-              for name in rest:
-                  print(f"  {name}", flush=True)
-              sys.exit("Rot: Die Frist des Jobs ist erreicht.")
-
-          failed = []
-          for index, part in enumerate(mine):
-              left = deadline - time.time()
-              if left <= 0:
-                  out_of_time(mine[index:])
-              # Je Auswahl dieselbe Grenze wie je Datei in der vollen Windows-Gruppe.
-              budget = file_budget(PlannedFile(part, 1, seconds[part]), BUDGET_SECONDS)
-              report = reports / f"auswahl-{numbers[part]}.xml"
-              print(f"::group::{part}", flush=True)
-              # Steht ein Test, schreibt faulthandler nach zwei Minuten den Stapel ins
-              # Protokoll; steht er über die Grenze, endet sein Prozessbaum, und die
-              # übrigen Auswahlen laufen.
-              process = subprocess.Popen(
-                  [sys.executable, "-u", "-X", "faulthandler", "-m", "pytest", "-v",
-                   "-o", "faulthandler_timeout=120", f"--junitxml={report}", *shlex.split(part)],
-                  start_new_session=os.name != "nt",
-              )
-              try:
-                  code = process.wait(timeout=min(budget, left))
-              except subprocess.TimeoutExpired:
-                  problem = stop_process_tree(process)
-                  if problem:
-                      print(problem, flush=True)
-                  print("::endgroup::", flush=True)
-                  if left <= budget:
-                      out_of_time(mine[index:])
-                  code = f"nach {budget:.0f} s angehalten"
-              else:
-                  print("::endgroup::", flush=True)
-              print(f"{part} -> Exit {code}", flush=True)
-              if code != 0:
-                  failed.append(f"{part} (Exit {code})")
-          # Vollständig gefahren, grün oder rot: Daran erkennt der nächste Lauf seine Basis
-          # (CI-09). Hält die Frist den Schritt an, entsteht die Marke nie.
-          with open(os.path.join(os.environ["RUNNER_TEMP"], "auswahl-gefahren"), "w", encoding="utf-8") as done:
-              done.write(f"{len(mine)}\n")
-          if failed:
-              sys.exit("Rot: " + "; ".join(failed))
-          print(f"Grün: {len(mine)} Auswahlen")
-          PY
+          count=$(python -c 'import json, os; print(len(json.loads(os.environ["PARTS"])))')
+          set -- python tools/run_suite_isolated.py --release \
+            --selection-order "$SOLIDON_ORDER" \
+            --shard-index "$SHARD" --shard-count "$count" \
+            --report-dir "$RUNNER_TEMP/berichte" \
+            --completed-mark "$RUNNER_TEMP/auswahl-gefahren"
           if [ "$RUNNER_OS" = "Linux" ]; then
-            xvfb-run -a --server-args="-screen 0 1920x1080x24" python "$RUNNER_TEMP/auswahl.py"
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" "$@"
           else
-            python "$RUNNER_TEMP/auswahl.py"
+            "$@"
           fi
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
