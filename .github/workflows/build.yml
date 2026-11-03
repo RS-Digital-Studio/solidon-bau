@@ -330,8 +330,25 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '05', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Typen der Tests gegen die Sperrklinke
+        id: test_types
+        if: (success() || steps.types.outcome == 'failure') && matrix.shard == 0 && runner.os == 'Linux'
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Typen der Tests gegen die Sperrklinke"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/mypy_ratchet.py
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '06', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Tests
-        if: success() || steps.types.outcome == 'failure'
+        if: success() || steps.types.outcome == 'failure' || steps.test_types.outcome == 'failure'
         timeout-minutes: 120
         shell: python
         env:
@@ -366,7 +383,7 @@ jobs:
           exit "$status"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '06', '--shell', 'bash']
+                     '--number', '07', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Kernprüfbericht sichern (verschließen)
         if: always()
@@ -377,7 +394,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/07" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/08" <<'SOLIDON_PATHS'
           reports/core/
           SOLIDON_PATHS
       - name: Kernprüfbericht sichern
@@ -385,7 +402,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-core-${{ matrix.os }}-${{ matrix.shard }}
-          path: ${{ runner.temp }}/solidon-ci/boxes/07/
+          path: ${{ runner.temp }}/solidon-ci/boxes/08/
           if-no-files-found: error
           retention-days: 1
           overwrite: true
