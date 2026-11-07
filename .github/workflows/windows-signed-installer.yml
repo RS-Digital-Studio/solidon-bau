@@ -181,7 +181,7 @@ jobs:
 
           script = r'''
           $ErrorActionPreference = 'Stop'
-          python -m pytest -q -p no:cacheprovider tests/test_sign_release.py tests/test_windows_signed_installer.py tests/test_ci_relay.py tests/test_ci_relay_runs.py
+          python -m pytest -q -p no:cacheprovider tests/test_sign_release.py tests/test_check_frozen_mcp.py tests/test_windows_signed_installer.py tests/test_ci_relay.py tests/test_ci_relay_runs.py
           if ($LASTEXITCODE -ne 0) { throw "Die Tests der geänderten Signierorchestrierung sind nicht grün; kein Installer." }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -274,6 +274,25 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '07', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP der Installation prüfen
+        timeout-minutes: 10
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP der Installation prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          $target = Join-Path $env:RUNNER_TEMP 'Solidon3D-installed'
+          python tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe')
+          if ($LASTEXITCODE -ne 0) { throw "Die MCP-Prüfung der installierten Anwendung ist rot; kein Installer zur Signatur." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '08', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Über die veröffentlichte Version aktualisieren und deinstallieren
         timeout-minutes: 45
         shell: python
@@ -292,7 +311,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Update oder Deinstallation des Setups sind rot; kein Installer zur Signatur." }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '08', '--shell', 'pwsh']
+                     '--number', '09', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Installer ausschließlich zur lokalen Setupsignatur übergeben (verschließen)
         shell: bash
@@ -302,14 +321,14 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/09" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/10" <<'SOLIDON_PATHS'
           ${{ runner.temp }}/windows-installer-output/*
           SOLIDON_PATHS
       - name: Installer ausschließlich zur lokalen Setupsignatur übergeben
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-windows-installer-signing-input
-          path: ${{ runner.temp }}/solidon-ci/boxes/09/
+          path: ${{ runner.temp }}/solidon-ci/boxes/10/
           if-no-files-found: error
           retention-days: 1
       - name: Protokoll verschließen

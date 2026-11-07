@@ -1382,6 +1382,26 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '08', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP im Paket prüfen
+        timeout-minutes: 10
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP im Paket prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py dist
+          else
+            python tools/check_frozen_mcp.py dist
+          fi
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '09', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Linux-Grenze prüfen (glibc und Bibliotheken des Rechners)
         if: runner.os == 'Linux'
         shell: python
@@ -1396,7 +1416,7 @@ jobs:
           python tools/check_glibc_floor.py dist/Solidon3D
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '09', '--shell', 'default']
+                     '--number', '10', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Laufzeit-Stückliste gegen CycloneDX 1.6 prüfen
         shell: python
@@ -1433,7 +1453,7 @@ jobs:
           }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '10', '--shell', 'pwsh']
+                     '--number', '11', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Lizenzbeilage aus dem fertigen Kundenartefakt erzeugen
         shell: python
@@ -1465,7 +1485,7 @@ jobs:
           if ($manifest.schema -ne 2) { throw "Das CRA-Lizenzmanifest hat nicht Schema 2." }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '11', '--shell', 'pwsh']
+                     '--number', '12', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Prüfsummengebundene Signierübergabe erzeugen (Windows)
         if: runner.os == 'Windows'
@@ -1481,7 +1501,7 @@ jobs:
           python tools/make_installer.py --signing-handoff
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '12', '--shell', 'default']
+                     '--number', '13', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Signiereingang packen (Windows)
         if: runner.os == 'Windows'
@@ -1507,7 +1527,7 @@ jobs:
           "$sum  windows-signing-input.zip" | Set-Content -Encoding ascii "dist/windows-signing-input.zip.sha256"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '13', '--shell', 'pwsh']
+                     '--number', '14', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Signiereingang übergeben (Windows) (verschließen)
         if: runner.os == 'Windows'
@@ -1518,7 +1538,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/14" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/15" <<'SOLIDON_PATHS'
           dist/windows-signing-input.zip
           dist/windows-signing-input.zip.sha256
           SOLIDON_PATHS
@@ -1527,7 +1547,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-windows-signing-input
-          path: ${{ runner.temp }}/solidon-ci/boxes/14/
+          path: ${{ runner.temp }}/solidon-ci/boxes/15/
           if-no-files-found: error
           retention-days: 1
       - name: Archiv packen (Linux)
@@ -1544,7 +1564,7 @@ jobs:
           python tools/make_linux_packages.py --tarball
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '15', '--shell', 'default']
+                     '--number', '16', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Paketierwerkzeuge holen (Linux)
         if: runner.os == 'Linux'
@@ -1571,7 +1591,7 @@ jobs:
           echo "APPIMAGETOOL_RUNTIME_FILE=/usr/local/lib/appimage-runtime-x86_64" >> "$GITHUB_ENV"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '16', '--shell', 'default']
+                     '--number', '17', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: AppImage bauen (Linux)
         if: runner.os == 'Linux'
@@ -1588,7 +1608,7 @@ jobs:
           python tools/make_linux_packages.py --appimage
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '17', '--shell', 'default']
+                     '--number', '18', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Öffentliche Linux-Pakete prüfen
         if: runner.os == 'Linux'
@@ -1604,7 +1624,7 @@ jobs:
           ls dist/*.AppImage >/dev/null
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '18', '--shell', 'default']
+                     '--number', '19', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: AppImage starten (Linux)
         if: runner.os == 'Linux'
@@ -1622,7 +1642,25 @@ jobs:
           xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_start.py --executable "$appimage"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '19', '--shell', 'default']
+                     '--number', '20', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP im AppImage prüfen (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 20
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP im AppImage prüfen (Linux)"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          appimage=$(ls dist/*.AppImage)
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$appimage"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '21', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Bundle prüfen (macOS)
         if: runner.os == 'macOS'
@@ -1641,7 +1679,7 @@ jobs:
           plutil -lint "dist/${name}.app/Contents/Info.plist"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '20', '--shell', 'default']
+                     '--number', '22', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Unsignierten macOS-App-Eingang packen
         if: runner.os == 'macOS'
@@ -1662,7 +1700,7 @@ jobs:
           shasum -a 256 "${name}-${version}-macos-$(uname -m).zip" | tee "${name}-${version}-macos-$(uname -m).zip.sha256"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '21', '--shell', 'default']
+                     '--number', '23', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Prüfsummen (Linux)
         if: runner.os == 'Linux'
@@ -1687,7 +1725,7 @@ jobs:
           done
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '22', '--shell', 'default']
+                     '--number', '24', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Archiv hochladen (Linux) (verschließen)
         if: runner.os == 'Linux'
@@ -1698,7 +1736,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/23" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/25" <<'SOLIDON_PATHS'
           dist/*-linux-x86_64.tar.gz
           dist/*-linux-x86_64.tar.gz.sha256
           dist/*.AppImage
@@ -1709,7 +1747,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-linux-release-input
-          path: ${{ runner.temp }}/solidon-ci/boxes/23/
+          path: ${{ runner.temp }}/solidon-ci/boxes/25/
           if-no-files-found: error
           retention-days: 1
       - name: Swift-Hülle gegenprüfen (macOS)
@@ -1728,7 +1766,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/24" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/26" <<'SOLIDON_PATHS'
           dist/*-macos-*.zip
           dist/*-macos-*.zip.sha256
           SOLIDON_PATHS
@@ -1737,7 +1775,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-app-input-${{ runner.arch }}
-          path: ${{ runner.temp }}/solidon-ci/boxes/24/
+          path: ${{ runner.temp }}/solidon-ci/boxes/26/
           if-no-files-found: error
           retention-days: 1
       - name: Protokoll verschließen
@@ -1915,6 +1953,24 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '05', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP im Flatpak prüfen
+        timeout-minutes: 20
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP im Flatpak prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          app_id=$(python -c "from app.branding import APP_ID; print(APP_ID)")
+          dbus-run-session -- xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --flatpak "$app_id"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '06', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Prüfsumme (Flatpak)
         shell: python
         env:
@@ -1930,7 +1986,7 @@ jobs:
           for bundle in *.flatpak; do sha256sum "$bundle" | tee "$bundle.sha256"; done
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '06', '--shell', 'default']
+                     '--number', '07', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Flatpak intern übergeben (verschließen)
         shell: bash
@@ -1940,7 +1996,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/07" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/08" <<'SOLIDON_PATHS'
           dist/*.flatpak
           dist/*.flatpak.sha256
           SOLIDON_PATHS
@@ -1948,7 +2004,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-linux-flatpak-input
-          path: ${{ runner.temp }}/solidon-ci/boxes/07/
+          path: ${{ runner.temp }}/solidon-ci/boxes/08/
           if-no-files-found: error
           retention-days: 1
       - name: Protokoll verschließen
@@ -2085,6 +2141,24 @@ jobs:
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '03', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP im AppImage auf frischem System prüfen
+        timeout-minutes: 20
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP im AppImage auf frischem System prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          appimage=$(find linux-input -maxdepth 1 -type f -name '*.AppImage')
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$appimage"
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '04', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Protokoll verschließen
         if: always()
@@ -2519,6 +2593,25 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '04', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP der Installation prüfen
+        timeout-minutes: 10
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP der Installation prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          $ErrorActionPreference = 'Stop'
+          $target = Join-Path $env:RUNNER_TEMP 'Solidon3D-installed'
+          python source/tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe')
+          if ($LASTEXITCODE -ne 0) { throw "Die MCP-Prüfung der installierten Anwendung ist rot." }
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '05', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Unsignierten Bau ausweisen
         shell: python
         env:
@@ -2532,7 +2625,7 @@ jobs:
           Write-Host "::warning::Unsignierter Prüfbau - nicht ausliefern. Nach der lokalen Anwendungssignatur baut windows-signed-installer.yml den Installer; seine Setup-Datei wird abschließend lokal signiert."
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '05', '--shell', 'pwsh']
+                     '--number', '06', '--shell', 'pwsh']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Unsignierten finalen Installer intern übergeben (verschließen)
         shell: bash
@@ -2542,7 +2635,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/06" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/07" <<'SOLIDON_PATHS'
           ${{ env.ARTIFACT_SETUP }}
           ${{ env.ARTIFACT_SETUP }}.sha256
           SOLIDON_PATHS
@@ -2550,7 +2643,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-windows-final-private
-          path: ${{ runner.temp }}/solidon-ci/boxes/06/
+          path: ${{ runner.temp }}/solidon-ci/boxes/07/
           if-no-files-found: error
           retention-days: 1
       - name: Protokoll verschließen
@@ -4318,6 +4411,22 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '06', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: MCP der Installation prüfen
+        timeout-minutes: 10
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "MCP der Installation prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/check_frozen_mcp.py --executable /Applications/Solidon3D.app
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '07', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Geprüften Mac-Bau veröffentlichen (verschließen)
         shell: bash
         env:
@@ -4326,7 +4435,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/07" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/08" <<'SOLIDON_PATHS'
           release-download/*
           app-download/*
           SOLIDON_PATHS
@@ -4334,7 +4443,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-macos-${{ matrix.runner_arch }}
-          path: ${{ runner.temp }}/solidon-ci/boxes/07/
+          path: ${{ runner.temp }}/solidon-ci/boxes/08/
           if-no-files-found: error
           retention-days: 1
       - name: Protokoll verschließen
