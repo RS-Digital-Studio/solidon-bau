@@ -76,8 +76,12 @@ jobs:
           retention-days: 1
 
   mutation:
-    name: Mutationstests (Linux)
+    name: Mutationstests (Linux, Ziffern ${{ matrix.digits }})
     needs: [quelle]
+    strategy:
+      fail-fast: false
+      matrix:
+        digits: ["05", "16", "27", "38", "49"]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -173,6 +177,7 @@ jobs:
         shell: python
         env:
           MUTATION_MODULE: ${{ inputs.module }}
+          MUTATION_DIGITS: ${{ matrix.digits }}
           SOLIDON_STEP_NAME: "Mutationen"
         run: |
           import os
@@ -188,25 +193,31 @@ jobs:
           # bestimmt den Ausgang, die Schritte danach laufen trotzdem.
           status=0
           keep() { if [ "$status" -eq 0 ]; then status=$1; fi; }
-          # Ein Modul allein: mutmut nimmt Mutantennamen mit Platzhalter, und jeder Name
-          # beginnt mit seinem Modul in Punktschreibweise (`app.core.units.x_clamp__mutmut_1`).
-          # results.txt nennt dann nur dieses Modul; die Statistik zählt die übrigen als
-          # `not checked` mit. Fehlt die Eingabe, gelten alle, und mutmut bekommt keinen
-          # Namen: Ein leerer fände nichts und hielte an.
+          # mutmut nimmt Mutantennamen mit Platzhalter, und jeder Name beginnt mit seinem
+          # Modul in Punktschreibweise und endet mit seiner Nummer
+          # (`app.core.units.x_clamp__mutmut_1`). Dieser Teil nimmt die Nummern mit den
+          # Ziffern aus `digits` am Ende, in einem Modul oder in allen (`all`).
           module="${MUTATION_MODULE:-all}"
           prefix=""
-          set --
           if [ "$module" != "all" ]; then
             prefix="$(printf '%s' "${module%.py}" | tr / .)."
-            set -- "${prefix}*"
           fi
           echo "$module" > reports/mutation/module.txt
+          echo "$MUTATION_DIGITS" > reports/mutation/digits.txt
           python -m pip freeze --exclude-editable > reports/mutation/versions.txt || keep $?
-          timeout -s INT -k 2m 90m mutmut run "$@" || keep $?
+          timeout -s INT -k 2m 90m mutmut run "${prefix}*[${MUTATION_DIGITS}]" || keep $?
           { mutmut export-cicd-stats && cp mutants/mutmut-cicd-stats.json reports/mutation/; } \
             || keep $?
-          mutmut results | { grep -F "    ${prefix}" || true; } > reports/mutation/results.txt \
-            || keep $?
+          # Jeder Mutant dieses Teils mit seinem Ausgang. Die Statistik darüber zählt jedes
+          # erzeugte Modul und jeden Teil mit; gezählt wird hier.
+          mutmut results --all true \
+            | { grep -F "    ${prefix}" || true; } \
+            | { grep -E "__mutmut_[0-9]*[${MUTATION_DIGITS}]: " || true; } \
+            > reports/mutation/all.txt || keep $?
+          sed -E 's/^.*: //' reports/mutation/all.txt | sort | uniq -c \
+            > reports/mutation/counts.txt || keep $?
+          { grep -v ': killed$' reports/mutation/all.txt || true; } \
+            > reports/mutation/results.txt || keep $?
           # Je gelaufene Mutation, die nicht getötet ist, die Änderung selbst: Sie sagt,
           # welcher Test fehlt. Nur `killed` gilt als getötet. Ungeprüfte (`not checked`,
           # `skipped`, Abbruch) stehen nur mit Namen in results.txt: Ein `mutmut show` je
@@ -218,6 +229,15 @@ jobs:
                 echo "== $mutant"
                 mutmut show "$mutant"
               done > reports/mutation/survived.txt || keep $?
+          # Vollständig ist ein Teil erst, wenn er jeden seiner Mutanten erreicht hat.
+          unchecked="$(grep -c -E ': (not checked|skipped)$' reports/mutation/all.txt || true)"
+          if [ ! -s reports/mutation/all.txt ]; then
+            echo "Dieser Teil fand keinen Mutanten (${prefix}*[${MUTATION_DIGITS}])."
+            keep 1
+          elif [ "${unchecked:-0}" -gt 0 ]; then
+            echo "${unchecked} Mutanten dieses Teils blieben ungeprüft: mehr Teile in digits."
+            keep 1
+          fi
           exit "$status"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -228,7 +248,7 @@ jobs:
         shell: bash
         env:
           SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
-          SOLIDON_ARTIFACT: mutation-report
+          SOLIDON_ARTIFACT: mutation-report-${{ matrix.digits }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
@@ -239,7 +259,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: mutation-report
+          name: mutation-report-${{ matrix.digits }}
           path: ${{ runner.temp }}/solidon-ci/boxes/04/
           if-no-files-found: error
           retention-days: 1
