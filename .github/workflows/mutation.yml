@@ -33,6 +33,12 @@ on:
         type: choice
         options: [auto, manual]
         required: true
+      module:
+        description: "Ein Modul aus [tool.mutmut] only_mutate oder all"
+        type: choice
+        options: [all, app/core/units.py, app/core/expressions.py, app/core/knowledge/profiles.py]
+        required: false
+        default: all
 
 permissions:
   contents: read
@@ -166,6 +172,7 @@ jobs:
       - name: Mutationen
         shell: python
         env:
+          MUTATION_MODULE: ${{ inputs.module }}
           SOLIDON_STEP_NAME: "Mutationen"
         run: |
           import os
@@ -181,11 +188,25 @@ jobs:
           # bestimmt den Ausgang, die Schritte danach laufen trotzdem.
           status=0
           keep() { if [ "$status" -eq 0 ]; then status=$1; fi; }
+          # Ein Modul allein: mutmut nimmt Mutantennamen mit Platzhalter, und jeder Name
+          # beginnt mit seinem Modul in Punktschreibweise (`app.core.units.x_clamp__mutmut_1`).
+          # results.txt nennt dann nur dieses Modul; die Statistik zählt die übrigen als
+          # `not checked` mit. Fehlt die Eingabe, gelten alle, und mutmut bekommt keinen
+          # Namen: Ein leerer fände nichts und hielte an.
+          module="${MUTATION_MODULE:-all}"
+          prefix=""
+          set --
+          if [ "$module" != "all" ]; then
+            prefix="$(printf '%s' "${module%.py}" | tr / .)."
+            set -- "${prefix}*"
+          fi
+          echo "$module" > reports/mutation/module.txt
           python -m pip freeze --exclude-editable > reports/mutation/versions.txt || keep $?
-          timeout -s INT -k 2m 90m mutmut run || keep $?
+          timeout -s INT -k 2m 90m mutmut run "$@" || keep $?
           { mutmut export-cicd-stats && cp mutants/mutmut-cicd-stats.json reports/mutation/; } \
             || keep $?
-          mutmut results > reports/mutation/results.txt || keep $?
+          mutmut results | { grep -F "    ${prefix}" || true; } > reports/mutation/results.txt \
+            || keep $?
           # Je gelaufene Mutation, die nicht getötet ist, die Änderung selbst: Sie sagt,
           # welcher Test fehlt. Nur `killed` gilt als getötet. Ungeprüfte (`not checked`,
           # `skipped`, Abbruch) stehen nur mit Namen in results.txt: Ein `mutmut show` je
