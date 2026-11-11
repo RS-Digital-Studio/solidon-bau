@@ -263,11 +263,11 @@ jobs:
                 dmg $gh/Ultimaker/Cura/releases/download/5.13.0/UltiMaker-Cura-5.13.0-macos-ARM64.dmg \
                   1483806486a19728bc0f363f847d75be3f179ea43c7f074bfc327f5b5c6e05ad ;;
               Linux/bambustudio)
-                appimage $gh/bambulab/BambuStudio/releases/download/v02.08.02.61/BambuStudio_ubuntu24.04-v02.08.02.61-20260820225108.AppImage \
-                  d501b103fac5424513ec0e8d6bc145fb30719de2c7d94d7320d723740c81a7fd ;;
+                appimage $gh/bambulab/BambuStudio/releases/download/v02.09.01.70/BambuStudio_ubu24-v02.09.01.70-20261103183404.AppImage \
+                  668dabb1be53c758189ed6bc89935285dea5e0af46216546b1bafd6882e9aff0 ;;
               macOS/bambustudio)
-                dmg $gh/bambulab/BambuStudio/releases/download/v02.08.02.61/Bambu_Studio_mac-v02.08.02.61-20260820225108.dmg \
-                  cf648a95858fb630e1353c4987038df60d6caab693f18411fb95fb809f2d6926 ;;
+                dmg $gh/bambulab/BambuStudio/releases/download/v02.09.01.70/Bambu_Studio_mac-v02.09.01.70-20261103183404.dmg \
+                  e4f42ac1542cb107cb21cbf98717de7b17e735bdb46fd2a18249e30929e3310d ;;
               Linux/elegooslicer)
                 appimage $gh/ELEGOO-3D/ElegooSlicer/releases/download/v1.5.3.5/ElegooSlicer_Linux_V1.5.3.5.AppImage \
                   7b3b3f08e0d0d51bb472c85865d1be9b0c28385423daba1cb0c3b225d0101afc ;;
@@ -275,13 +275,13 @@ jobs:
                 dmg $gh/ELEGOO-3D/ElegooSlicer/releases/download/v1.5.3.5/ElegooSlicer_Mac_arm64_V1.5.3.5.dmg \
                   2ff9db9d398af552738f447ad63710d61407b69a7140457238d1507c978b5d9f ;;
               Linux/crealityprint)
-                # 7.3.0 kam in zwei Bauständen (6149, 6151); gemessen ist 6149,
-                # wie am Arbeitsplatz (SLICER_DEVIATION in tests/test_print_time.py).
-                appimage $gh/CrealityOfficial/CrealityPrint/releases/download/v7.3.0/CrealityPrint-V7.3.0.6149-x86_64-Release.AppImage \
-                  313f7fa86cf3b670180171fb36a45d794ad065519a1d162e172de9bbe41879e0 ;;
+                # Gemessen ist 7.3.1.6378, wie am Arbeitsplatz (SLICER_DEVIATION in
+                # tests/test_print_time.py); 7.3.0 kam in drei Bauständen (6149, 6151, 6157).
+                appimage $gh/CrealityOfficial/CrealityPrint/releases/download/v7.3.1/CrealityPrint-V7.3.1.6378-x86_64-Release.AppImage \
+                  f8c8dbf18a6b0d5878961b24490fc20958eefe2f03f6a89f524cb9b21e55a107 ;;
               macOS/crealityprint)
-                dmg $gh/CrealityOfficial/CrealityPrint/releases/download/v7.3.0/CrealityPrint-7.3.0.6149-macx-arm64-Release.dmg \
-                  c22d752d1350e54cfb13b3c8310166af4e115991591a0e0a14daf43d8a427007 ;;
+                dmg $gh/CrealityOfficial/CrealityPrint/releases/download/v7.3.1/CrealityPrint-7.3.1.6378-macx-arm64-Release.dmg \
+                  747c226e996d22850f587f181a46b7d4e3fe8ce8d7e03ce23c959ef771a30021 ;;
               Linux/anycubicslicernext)
                 # Das Paket aus der apt-Quelle des Herstellers, als Datei mit
                 # Prüfsumme statt über eine Quelle ohne Signatur.
