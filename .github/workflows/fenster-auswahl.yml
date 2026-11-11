@@ -95,8 +95,7 @@ jobs:
           import sys
 
           script = r'''
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          python tools/ci_apt.py install --no-install-recommends \
             libegl1 libgl1 libdbus-1-3 xvfb xauth \
             libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers \
             fonts-dejavu-core fontconfig \

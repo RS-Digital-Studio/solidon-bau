@@ -88,8 +88,7 @@ jobs:
           import sys
 
           script = r'''
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          python tools/ci_apt.py install --no-install-recommends \
             libegl1 libgl1 libdbus-1-3 xvfb xauth dbus dbus-x11 \
             libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers libopengl0 libglu1-mesa \
             fonts-dejavu-core fontconfig \
@@ -218,21 +217,22 @@ jobs:
                 dmg $gh/SoftFever/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Mac_universal_V2.4.2.dmg \
                   e15e7bb1b66214ec6e96b169b388004179c4f5f705effcdaf8c80d4992ee0366 ;;
               Linux/orcanext)
-                # Die nächste Linie daneben, 2.5.0-alpha (RM-862): Die Herstellerprofile
-                # liegen als OPC-Archive im Abbild. Der Marker „orcanext“ wählt sie
+                # Die nächste Linie daneben (RM-862): 2.5.0, am 07.11.2026 erschienen und
+                # am Arbeitsplatz gemessen (RM-1914); die Herstellerprofile liegen als
+                # OPC-Archive im Abbild. Der Marker „orcanext“ wählt sie
                 # (tests/conftest.py, RELEASE_LINES).
-                appimage $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0-alpha/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.5.0-alpha.AppImage \
-                  386a5ef38991a4fc32ae2e35ee4261bea43d983683ac675a2c2e2395ab2bc7bb ;;
+                appimage $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.5.0.AppImage \
+                  d13eb0a9cd618ed080ab6b82c64c0a60c4501aac91e88d5ac2c3b526fb141a7c ;;
               macOS/orcanext)
-                dmg $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0-alpha/OrcaSlicer_Mac_universal_V2.5.0-alpha.dmg \
-                  db253104d2dff8d284f3bfbfeb8878f09b78cb480d8e6037439e2f796bd3667f "OrcaSlicer 2.5.0-alpha.app" ;;
+                dmg $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0/OrcaSlicer_Mac_universal_V2.5.0.dmg \
+                  061e0c6ff104c37655c83190725ac2420960f23c39b56aae9b546e6c542995d5 "OrcaSlicer 2.5.0.app" ;;
               Linux/orcaflatpak)
                 # Die nächste Linie als Flatpak-Bündel des Herstellers, nur von Hand
                 # (`--programs orcaflatpak`): Neben dem AppImage fände die Suche zuerst
                 # das Flatpak. Laufzeit und Bündel stehen fest, die Laufzeit auf ihrem
                 # Flathub-Commit, das Bündel über seine SHA-256.
-                fetch $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0-alpha/OrcaSlicer-Linux-flatpak_V2.5.0-alpha_x86_64.flatpak \
-                  2caa907e75ca1cd499568d7940d1fe787b795b3deff1d5dcf4cda31f1a4b6d32 "$RUNNER_TEMP/orca.flatpak"
+                fetch $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0/OrcaSlicer-Linux-flatpak_V2.5.0_x86_64.flatpak \
+                  58c10feaa2df81f6385db628185ee6c5c656391de57974646a5f4dd40e7947b3 "$RUNNER_TEMP/orca.flatpak"
                 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
                 sudo flatpak install -y --noninteractive flathub org.gnome.Platform//50
                 sudo flatpak update -y --noninteractive \
@@ -242,26 +242,29 @@ jobs:
                 flatpak info com.orcaslicer.OrcaSlicer | sed -n 1,12p ;;
               macOS/orcaflatpak)
                 # Flatpak gibt es nur unter Linux; macOS fährt dieselbe Auswahl mit dem Bündel.
-                dmg $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0-alpha/OrcaSlicer_Mac_universal_V2.5.0-alpha.dmg \
-                  db253104d2dff8d284f3bfbfeb8878f09b78cb480d8e6037439e2f796bd3667f "OrcaSlicer 2.5.0-alpha.app" ;;
+                dmg $gh/OrcaSlicer/OrcaSlicer/releases/download/v2.5.0/OrcaSlicer_Mac_universal_V2.5.0.dmg \
+                  061e0c6ff104c37655c83190725ac2420960f23c39b56aae9b546e6c542995d5 "OrcaSlicer 2.5.0.app" ;;
               Linux/prusaslicer)
                 # Seit 2.9 gibt es PrusaSlicer für Linux nur als Flatpak; die
                 # Commit-Kennung ist die Prüfsumme des Inhalts.
                 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
                 sudo flatpak install -y --noninteractive flathub com.prusa3d.PrusaSlicer
+                # 2.9.7, wie am Arbeitsplatz gemessen (RM-1914): der Commit von
+                # refs/heads/app/com.prusa3d.PrusaSlicer/x86_64/stable am 11.11.2026.
                 sudo flatpak update -y --noninteractive \
-                  --commit=bf3534e4ffc688bbaf625206f27f9333b1b8820d3425dae19d3083b47e08ce79 com.prusa3d.PrusaSlicer
-                test "$(flatpak info --show-commit com.prusa3d.PrusaSlicer)" = bf3534e4ffc688bbaf625206f27f9333b1b8820d3425dae19d3083b47e08ce79
+                  --commit=22caa5995fef8170cbed1d404f993996e5552e47159391666a7b096a85d8f641 com.prusa3d.PrusaSlicer
+                test "$(flatpak info --show-commit com.prusa3d.PrusaSlicer)" = 22caa5995fef8170cbed1d404f993996e5552e47159391666a7b096a85d8f641
                 flatpak info com.prusa3d.PrusaSlicer | sed -n 1,12p ;;
               macOS/prusaslicer)
-                dmg $gh/prusa3d/PrusaSlicer/releases/download/version_2.9.6/PrusaSlicer-2.9.6.dmg \
-                  94fd7b8a9f87c9631e1c71739b15b184fc5f4c0ceabd69072f1c78f229a4fe40 ;;
+                dmg $gh/prusa3d/PrusaSlicer/releases/download/version_2.9.7/PrusaSlicer-2.9.7.dmg \
+                  f735f9d527823d159d9ac1e8f84ce1b74ea571e705e70e723bee546d070db60b ;;
               Linux/cura)
-                appimage $gh/Ultimaker/Cura/releases/download/5.13.0/UltiMaker-Cura-5.13.0-linux-X64.AppImage \
-                  100f068127b2598167f00ba4db0e0699ded45adf97bbab2d22ff171a1e1ecc40 ;;
+                # 5.14.0, wie am Arbeitsplatz gemessen (RM-1914).
+                appimage $gh/Ultimaker/Cura/releases/download/5.14.0/UltiMaker-Cura-5.14.0-linux-X64.AppImage \
+                  988a2a67cce7ee7b9b9a843aad65ec4754d2ceb0a72e70eeaf884b995b75990f ;;
               macOS/cura)
-                dmg $gh/Ultimaker/Cura/releases/download/5.13.0/UltiMaker-Cura-5.13.0-macos-ARM64.dmg \
-                  1483806486a19728bc0f363f847d75be3f179ea43c7f074bfc327f5b5c6e05ad ;;
+                dmg $gh/Ultimaker/Cura/releases/download/5.14.0/UltiMaker-Cura-5.14.0-macos-ARM64.dmg \
+                  b517488218c134ef36a7845540dd0778205ffedb24f83f0ee41f67423ffcbf21 ;;
               Linux/bambustudio)
                 appimage $gh/bambulab/BambuStudio/releases/download/v02.09.01.70/BambuStudio_ubu24-v02.09.01.70-20261103183404.AppImage \
                   668dabb1be53c758189ed6bc89935285dea5e0af46216546b1bafd6882e9aff0 ;;
@@ -287,7 +290,7 @@ jobs:
                 # Prüfsumme statt über eine Quelle ohne Signatur.
                 fetch https://cdn-universe-slicer.anycubic.com/prod/pool/main/a/anycubicslicernext/AnycubicSlicerNext_linux-v2.0.0.5-20260913065625.deb \
                   fe087a56014ed25cdfe4c3c293b517adaee0a9b2e1ded79f5e394b7968817c15 "$RUNNER_TEMP/anycubic.deb"
-                sudo apt-get install -y "$RUNNER_TEMP/anycubic.deb" ;;
+                python tools/ci_apt.py install "$RUNNER_TEMP/anycubic.deb" ;;
               macOS/anycubicslicernext)
                 dmg https://cdn.anycubic-cloud.anycubic.com/file/2026/09/04/dmg/178852197829378100/develop_859_2.0.0.3_arm64_20260904033804_AnycubicSlicerNext.dmg \
                   de7f34ed119b59f3c541ab6593c1bb7986148d672810737f1bd62d774afa65e2 ;;
