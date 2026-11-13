@@ -210,7 +210,8 @@ jobs:
             echo "::group::$program ($RUNNER_OS $arch)"
             case "$RUNNER_OS/$program" in
               Linux/orcaslicer)
-                # Die stabile Fassung, mit der die Kunden drucken (Review D9 N1).
+                # Die vorige stabile Fassung mit JSON-Profilen, mit der Kunden ohne
+                # Update weiter drucken (Review D9 N1); die aktuelle 2.5 fährt orcanext.
                 appimage $gh/SoftFever/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.4.2.AppImage \
                   d12fb8c8eac1aecd2dfb6377acd48f994f8fa439ed5292fa532dd82880f029fd ;;
               macOS/orcaslicer)
