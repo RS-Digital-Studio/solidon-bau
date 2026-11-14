@@ -490,7 +490,7 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt -e .
+          python -m pip install -c constraints.txt -e ".[geom,brep]"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '01', '--shell', 'default']
@@ -522,7 +522,7 @@ jobs:
           import sys
 
           script = r'''
-          python tools/ci_apt.py install --no-install-recommends gnome-keyring dbus dbus-x11
+          python tools/ci_apt.py install --no-install-recommends gnome-keyring dbus dbus-x11 policykit-1 policykit-1-gnome libpam-systemd xvfb xauth xdotool
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '03', '--shell', 'default']
@@ -542,6 +542,58 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '04', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Gerätekennung und Käuferweg ohne Netz
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Gerätekennung und Käuferweg ohne Netz"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && python tools/check_linux_trial.py --source --output reports/trial-platform-Linux.json'
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '05', '--shell', 'bash']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Echten Polkit-Dialog und Abbruch prüfen
+        timeout-minutes: 6
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Echten Polkit-Dialog und Abbruch prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/check_polkit_dialog.py --output reports/trial-polkit-dialog.json
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '06', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Plattformnachweis sichern (verschließen)
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: trial-platform-Linux
+          SOLIDON_IF_EMPTY: error
+          SOLIDON_HIDDEN: "false"
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/07" <<'SOLIDON_PATHS'
+          reports/trial-platform-Linux*.json
+          reports/trial-polkit-dialog.json
+          SOLIDON_PATHS
+      - name: Plattformnachweis sichern
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: trial-platform-Linux
+          path: ${{ runner.temp }}/solidon-ci/boxes/07/
+          if-no-files-found: error
+          retention-days: 1
       - name: Protokoll verschließen
         if: always()
         shell: bash
@@ -677,6 +729,56 @@ jobs:
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '03', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Gerätekennung und Käuferweg ohne Netz
+        if: runner.os == 'macOS'
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Gerätekennung und Käuferweg ohne Netz"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/check_trial_platform.py . --output reports/trial-platform-${{ runner.os }}.json
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '04', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Windows-Käuferweg als Standardbenutzer
+        if: runner.os == 'Windows'
+        timeout-minutes: 7
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Windows-Käuferweg als Standardbenutzer"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          & tools/check_windows_trial.ps1 -Python (Get-Command python).Source -Worktree (Get-Location).Path -Output reports/trial-platform-Windows.json
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '05', '--shell', 'pwsh']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Schlaf- und Weckfähigkeit nur lesen
+        if: runner.os != 'Windows'
+        timeout-minutes: 2
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Schlaf- und Weckfähigkeit nur lesen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/check_guest_suspend.py --output reports/guest-suspend-${{ runner.os }}.json
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '06', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Fensterverträge und Rendererfälle
         shell: python
         env:
@@ -702,7 +804,7 @@ jobs:
           fi
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '04', '--shell', 'bash']
+                     '--number', '07', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Fenstervertrags- und Rendererberichte sichern (verschließen)
         if: always()
@@ -713,7 +815,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/05" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/08" <<'SOLIDON_PATHS'
           reports/
           SOLIDON_PATHS
       - name: Fenstervertrags- und Rendererberichte sichern
@@ -721,7 +823,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tests-contracts-${{ matrix.os }}
-          path: ${{ runner.temp }}/solidon-ci/boxes/05/
+          path: ${{ runner.temp }}/solidon-ci/boxes/08/
           if-no-files-found: error
           retention-days: 1
           overwrite: true
@@ -1185,7 +1287,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-22.04, macos-26]
     env:
-      MACOS_SIGNING_MODE: ${{ vars.MACOS_SIGNING_MODE || 'unsigned' }}
+      MACOS_SIGNING_MODE: ${{ (github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE || 'unsigned') || 'unsigned' }}
     steps:
       - name: Bauwerkzeug holen
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1264,7 +1366,7 @@ jobs:
           # über wgpu, und der Paketlauf soll auf demselben Boden stehen wie
           # der Testlauf darüber. ``xvfb`` und ``xauth`` für den Starttest
           # der fertigen Pakete.
-          python tools/ci_apt.py install --no-install-recommends libegl1 libgl1 libxkbcommon0 libdbus-1-3 pkg-config \
+          python tools/ci_apt.py install --no-install-recommends libegl1 libgl1 libxkbcommon0 libdbus-1-3 pkg-config gnome-keyring dbus \
             libvulkan1 mesa-vulkan-drivers xvfb xauth \
             libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
             libxcb-shape0 libxcb-util1 libxcb-xkb1 libxkbcommon-x11-0
@@ -1390,9 +1492,9 @@ jobs:
 
           script = r'''
           if [ "$RUNNER_OS" = Linux ]; then
-            xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py dist
+            dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py dist --qa-ci-channel package-Linux-X64'
           else
-            python tools/check_frozen_mcp.py dist
+            python tools/check_frozen_mcp.py dist --qa-ci-channel package-${{ runner.os }}-${{ runner.arch }}
           fi
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -1653,7 +1755,7 @@ jobs:
 
           script = r'''
           appimage=$(ls dist/*.AppImage)
-          xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$appimage"
+          dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$1" --qa-ci-channel appimage-build' -- "$appimage"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '21', '--shell', 'default']
@@ -1901,7 +2003,7 @@ jobs:
 
           script = r'''
           set -euo pipefail
-          python tools/ci_apt.py install --no-install-recommends flatpak flatpak-builder elfutils librsvg2-common xvfb xauth
+          python tools/ci_apt.py install --no-install-recommends flatpak flatpak-builder elfutils librsvg2-common xvfb xauth policykit-1 gnome-keyring dbus
           flatpak remote-add --if-not-exists --user flathub \
             https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y flathub \
@@ -1961,11 +2063,50 @@ jobs:
           script = r'''
           set -euo pipefail
           app_id=$(python -c "from app.branding import APP_ID; print(APP_ID)")
-          dbus-run-session -- xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --flatpak "$app_id"
+          python -m pip install -c constraints.txt keyring
+          dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --flatpak "$1" --qa-ci-channel flatpak' -- "$app_id"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '06', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Native Gerätekennung im Flatpak prüfen
+        timeout-minutes: 15
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Native Gerätekennung im Flatpak prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          bundle=$(find dist -maxdepth 1 -type f -name '*.flatpak')
+          dbus-run-session -- xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_linux_trial.py --flatpak --artifact "$bundle" --output reports/trial-flatpak.json
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '07', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Flatpak-Gerätebelege sichern (verschließen)
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: trial-flatpak
+          SOLIDON_IF_EMPTY: error
+          SOLIDON_HIDDEN: "false"
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/08" <<'SOLIDON_PATHS'
+          reports/trial-flatpak*.json
+          SOLIDON_PATHS
+      - name: Flatpak-Gerätebelege sichern
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: trial-flatpak
+          path: ${{ runner.temp }}/solidon-ci/boxes/08/
+          if-no-files-found: error
+          retention-days: 1
       - name: Prüfsumme (Flatpak)
         shell: python
         env:
@@ -1981,7 +2122,7 @@ jobs:
           for bundle in *.flatpak; do sha256sum "$bundle" | tee "$bundle.sha256"; done
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '07', '--shell', 'default']
+                     '--number', '09', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Flatpak intern übergeben (verschließen)
         shell: bash
@@ -1991,7 +2132,7 @@ jobs:
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
         run: |
-          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/08" <<'SOLIDON_PATHS'
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/10" <<'SOLIDON_PATHS'
           dist/*.flatpak
           dist/*.flatpak.sha256
           SOLIDON_PATHS
@@ -1999,7 +2140,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: solidon3d-linux-flatpak-input
-          path: ${{ runner.temp }}/solidon-ci/boxes/08/
+          path: ${{ runner.temp }}/solidon-ci/boxes/10/
           if-no-files-found: error
           retention-days: 1
       - name: Protokoll verschließen
@@ -2091,7 +2232,7 @@ jobs:
 
           script = r'''
           set -euo pipefail
-          python tools/ci_apt.py install --no-install-recommends libegl1 libgl1 libvulkan1 mesa-vulkan-drivers xvfb xauth
+          python tools/ci_apt.py install --no-install-recommends libegl1 libgl1 libvulkan1 mesa-vulkan-drivers xvfb xauth policykit-1 gnome-keyring dbus
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '01', '--shell', 'default']
@@ -2149,11 +2290,50 @@ jobs:
           script = r'''
           set -euo pipefail
           appimage=$(find linux-input -maxdepth 1 -type f -name '*.AppImage')
-          xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$appimage"
+          python -m pip install -c constraints.txt keyring
+          dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$1" --qa-ci-channel appimage-${{ matrix.os }}' -- "$appimage"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '04', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Native Gerätekennung im AppImage prüfen
+        timeout-minutes: 15
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Native Gerätekennung im AppImage prüfen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          set -euo pipefail
+          appimage=$(find linux-input -maxdepth 1 -type f -name '*.AppImage')
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_linux_trial.py --artifact "$appimage" --output reports/trial-appimage.json
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '05', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: AppImage-Gerätebelege sichern (verschließen)
+        if: always()
+        shell: bash
+        env:
+          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_ARTIFACT: trial-appimage-${{ matrix.os }}
+          SOLIDON_IF_EMPTY: error
+          SOLIDON_HIDDEN: "false"
+        run: |
+          "$SOLIDON_PYTHON" "$SOLIDON_TOOL" pack --box "$RUNNER_TEMP/solidon-ci/boxes/06" <<'SOLIDON_PATHS'
+          reports/trial-appimage*.json
+          SOLIDON_PATHS
+      - name: AppImage-Gerätebelege sichern
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: trial-appimage-${{ matrix.os }}
+          path: ${{ runner.temp }}/solidon-ci/boxes/06/
+          if-no-files-found: error
+          retention-days: 1
       - name: Protokoll verschließen
         if: always()
         shell: bash
@@ -2600,7 +2780,9 @@ jobs:
           script = r'''
           $ErrorActionPreference = 'Stop'
           $target = Join-Path $env:RUNNER_TEMP 'Solidon3D-installed'
-          python source/tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe')
+          python -m pip install -c source/constraints.txt keyring
+          if ($LASTEXITCODE -ne 0) { throw "Der QA-Schlüsselbund ist nicht vollständig installiert." }
+          python source/tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe') --qa-ci-channel windows-installer
           if ($LASTEXITCODE -ne 0) { throw "Die MCP-Prüfung der installierten Anwendung ist rot." }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -2836,6 +3018,7 @@ jobs:
     if: >-
       inputs.tests_only != true && (
         (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch') &&
+        (github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) &&
         (vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized'))
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -3460,8 +3643,8 @@ jobs:
     if: >-
       inputs.tests_only != true && (
       always() && needs.package.result == 'success' &&
-      (((vars.MACOS_SIGNING_MODE == '' || vars.MACOS_SIGNING_MODE == 'unsigned') && needs.macos-app-sign.result == 'skipped') ||
-       ((vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized') && needs.macos-app-sign.result == 'success')))
+      ((((github.event.inputs.ref != 'refs/heads/main' && !startsWith(github.event.inputs.ref, 'refs/tags/')) || vars.MACOS_SIGNING_MODE == '' || vars.MACOS_SIGNING_MODE == 'unsigned') && needs.macos-app-sign.result == 'skipped') ||
+       ((github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized') && needs.macos-app-sign.result == 'success')))
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     permissions:
@@ -3474,7 +3657,7 @@ jobs:
             runner_arch: ARM64
             machine_arch: arm64
     env:
-      MACOS_SIGNING_MODE: ${{ vars.MACOS_SIGNING_MODE || 'unsigned' }}
+      MACOS_SIGNING_MODE: ${{ (github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE || 'unsigned') || 'unsigned' }}
     steps:
       - name: Bauwerkzeug holen
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -3677,7 +3860,7 @@ jobs:
   macos-installer-sign:
     name: macOS-Installer signieren (${{ matrix.machine_arch }})
     needs: macos-package
-    if: inputs.tests_only != true && (vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized')
+    if: inputs.tests_only != true && ((github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized'))
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     environment: production-signing
@@ -4218,8 +4401,8 @@ jobs:
     if: >-
       inputs.tests_only != true && (
       always() && needs.macos-package.result == 'success' &&
-      (((vars.MACOS_SIGNING_MODE == '' || vars.MACOS_SIGNING_MODE == 'unsigned') && needs.macos-installer-sign.result == 'skipped') ||
-       ((vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized') && needs.macos-installer-sign.result == 'success')))
+      ((((github.event.inputs.ref != 'refs/heads/main' && !startsWith(github.event.inputs.ref, 'refs/tags/')) || vars.MACOS_SIGNING_MODE == '' || vars.MACOS_SIGNING_MODE == 'unsigned') && needs.macos-installer-sign.result == 'skipped') ||
+       ((github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized') && needs.macos-installer-sign.result == 'success')))
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     permissions:
@@ -4232,7 +4415,7 @@ jobs:
             runner_arch: ARM64
             machine_arch: arm64
     env:
-      MACOS_SIGNING_MODE: ${{ vars.MACOS_SIGNING_MODE || 'unsigned' }}
+      MACOS_SIGNING_MODE: ${{ (github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE || 'unsigned') || 'unsigned' }}
     steps:
       - name: Bauwerkzeug holen
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -4416,7 +4599,8 @@ jobs:
           import sys
 
           script = r'''
-          python tools/check_frozen_mcp.py --executable /Applications/Solidon3D.app
+          python -m pip install -c constraints.txt keyring
+          python tools/check_frozen_mcp.py --executable /Applications/Solidon3D.app --qa-ci-channel macos-installed-${{ runner.arch }}
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '07', '--shell', 'bash']
