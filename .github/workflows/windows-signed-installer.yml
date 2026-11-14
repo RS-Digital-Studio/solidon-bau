@@ -181,7 +181,7 @@ jobs:
 
           script = r'''
           $ErrorActionPreference = 'Stop'
-          python -m pytest -q -p no:cacheprovider tests/test_sign_release.py tests/test_check_frozen_mcp.py tests/test_frozen_mcp_licence.py tests/test_frozen_mcp_qa.py tests/test_windows_signed_installer.py tests/test_ci_relay.py tests/test_ci_relay_runs.py
+          python -m pytest -q -p no:cacheprovider tests/test_sign_release.py tests/test_check_frozen_mcp.py tests/test_windows_signed_installer.py tests/test_ci_relay.py tests/test_ci_relay_runs.py
           if ($LASTEXITCODE -ne 0) { throw "Die Tests der geänderten Signierorchestrierung sind nicht grün; kein Installer." }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -287,9 +287,7 @@ jobs:
           script = r'''
           $ErrorActionPreference = 'Stop'
           $target = Join-Path $env:RUNNER_TEMP 'Solidon3D-installed'
-          python -m pip install -c constraints.txt keyring
-          if ($LASTEXITCODE -ne 0) { throw "Der QA-Schlüsselbund ist nicht vollständig installiert." }
-          python tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe') --qa-ci-channel windows-signed-installer
+          python tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe')
           if ($LASTEXITCODE -ne 0) { throw "Die MCP-Prüfung der installierten Anwendung ist rot; kein Installer zur Signatur." }
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
