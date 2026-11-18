@@ -7,10 +7,9 @@ on:
   workflow_call:
     inputs:
       parts:
-        description: "Teile je Plattform als JSON-Liste"
+        description: "Die Matrix der Teile als JSON: include mit os, shard und parts"
         type: string
-        required: false
-        default: "[0, 1, 2]"
+        required: true
     secrets:
       SOLIDON_BAU_KEY:
         required: true
@@ -29,14 +28,12 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-24.04, macos-latest]
-        shard: ${{ fromJSON(inputs.parts) }}
+      matrix: ${{ fromJSON(inputs.parts) }}
     env:
       QT_QPA_PLATFORM: offscreen
       PYTHONUTF8: "1"
       SHARD: ${{ matrix.shard }}
-      PARTS: ${{ inputs.parts }}
+      PARTS: ${{ matrix.parts }}
     steps:
       - name: Bauwerkzeug holen
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -148,10 +145,9 @@ jobs:
 
           script = r'''
           set -euo pipefail
-          count=$(python -c 'import json, os; print(len(json.loads(os.environ["PARTS"])))')
           set -- python tools/run_suite_isolated.py --release \
             --selection-order "$SOLIDON_ORDER" \
-            --shard-index "$SHARD" --shard-count "$count" \
+            --shard-index "$SHARD" --shard-count "$PARTS" \
             --report-dir "$RUNNER_TEMP/berichte" \
             --completed-mark "$RUNNER_TEMP/auswahl-gefahren"
           if [ "$RUNNER_OS" = "Linux" ]; then
