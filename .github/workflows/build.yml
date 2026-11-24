@@ -1421,7 +1421,7 @@ jobs:
           python tools/build_licence_module.py ${{ github.event.inputs.event == 'workflow_dispatch' && inputs.without_service == true && '--ohne-dienst' || '' }}
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
-                     '--number', '04', '--shell', 'default']
+                     '--number', '04', '--shell', 'bash']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Bauen
         shell: python
