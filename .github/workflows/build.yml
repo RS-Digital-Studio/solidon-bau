@@ -2,7 +2,7 @@
 # Nicht von Hand bearbeiten; die Begründungen stehen in der Quelle.
 
 name: Bauen
-run-name: Solidon ${{ inputs.event }} ${{ inputs.ref }} ${{ inputs.sha }} ${{ inputs.selection }} ${{ inputs.nonce }}
+run-name: Solidon ${{ inputs.event }} ${{ inputs.ref }} ${{ inputs.sha }} ${{ inputs.selection }} ${{ inputs.nonce }} platz${{ inputs.slot }}
 
 on:
   workflow_dispatch:
@@ -33,6 +33,11 @@ on:
         type: choice
         options: [auto, manual]
         required: true
+      slot:
+        description: "Platz des Laufs: sein Geheimnis und seine Gruppe"
+        type: choice
+        options: ['1', '2']
+        required: true
       tests_only:
         description: "Nur Kernprüfungen: Windows, Linux und macOS ARM, ohne Fenster, Paketbau oder Signierung"
         type: boolean
@@ -48,7 +53,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: solidon-bau
+  group: solidon-bau-${{ inputs.slot }}
   cancel-in-progress: false
 
 jobs:
@@ -119,7 +124,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -182,7 +187,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-quality-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -248,7 +253,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -406,7 +411,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: tests-core-${{ matrix.os }}-${{ matrix.shard }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -427,7 +432,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-suite-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -486,7 +491,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -595,7 +600,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: trial-platform-Linux
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -616,7 +621,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-linux-keyring-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -682,7 +687,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -828,7 +833,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: tests-contracts-${{ matrix.os }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -849,7 +854,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-window-contracts-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -913,7 +918,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -961,7 +966,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-selection-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -988,7 +993,7 @@ jobs:
     with:
       parts: ${{ needs.selection.outputs.window_parts }}
     secrets:
-      SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+      SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
 
   slicer-selection:
     name: Slicerauswahl zum Push
@@ -996,7 +1001,7 @@ jobs:
     if: inputs.tests_only != true && (github.event.inputs.event == 'push' && startsWith(github.event.inputs.ref, 'refs/heads/') && needs.selection.outputs.slicer_count != '0')
     uses: ./.github/workflows/slicer-auswahl.yml
     secrets:
-      SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+      SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
 
   windows:
     name: Fenster- und Rendererdateien (Windows, Gruppe ${{ matrix.shard }})
@@ -1045,7 +1050,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -1107,7 +1112,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: tests-windows-${{ matrix.shard }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -1128,7 +1133,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-windows-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -1190,7 +1195,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -1253,7 +1258,7 @@ jobs:
         if: always() && runner.os == 'macOS'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: tests-macos-minimum
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -1273,7 +1278,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-macos-minimum-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -1341,7 +1346,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -1641,7 +1646,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-windows-signing-input
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -1839,7 +1844,7 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux-release-input
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -1869,7 +1874,7 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-input-${{ runner.arch }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -1890,7 +1895,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-package-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -1952,7 +1957,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -1968,7 +1973,7 @@ jobs:
       - name: Linux-Baum laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux-release-input
           SOLIDON_TARGET: linux-input
         run: |
@@ -2101,7 +2106,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: trial-flatpak
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -2137,7 +2142,7 @@ jobs:
       - name: Flatpak intern übergeben (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux-flatpak-input
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -2157,7 +2162,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-linux-flatpak-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -2223,7 +2228,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -2255,7 +2260,7 @@ jobs:
       - name: AppImage laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux-release-input
           SOLIDON_TARGET: linux-input
         run: |
@@ -2328,7 +2333,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: trial-appimage-${{ matrix.os }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -2348,7 +2353,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-linux-release-start-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -2410,7 +2415,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -2441,7 +2446,7 @@ jobs:
       - name: Äußere Linux-Pakete und App-Baum laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux-release-input
           SOLIDON_TARGET: release-download
         run: |
@@ -2454,7 +2459,7 @@ jobs:
       - name: Flatpak laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux-flatpak-input
           SOLIDON_TARGET: release-download
         run: |
@@ -2537,7 +2542,7 @@ jobs:
       - name: Geprüfte Linux-Pakete veröffentlichen (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-linux
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -2559,7 +2564,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-linux-release-check-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -2621,7 +2626,7 @@ jobs:
       - name: Unsignierten App-Baum laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-windows-signing-input
           SOLIDON_TARGET: signing-download
         run: |
@@ -2747,7 +2752,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: source
         run: |
@@ -2816,7 +2821,7 @@ jobs:
       - name: Unsignierten finalen Installer intern übergeben (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-windows-final-private
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -2836,7 +2841,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-windows-installer-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -2898,7 +2903,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -2929,7 +2934,7 @@ jobs:
       - name: Finalen Installer laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-windows-final-private
           SOLIDON_TARGET: release-download
         run: |
@@ -2942,7 +2947,7 @@ jobs:
       - name: Unsignierten App-Baum laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-windows-signing-input
           SOLIDON_TARGET: app-download
         run: |
@@ -2984,7 +2989,7 @@ jobs:
       - name: Geprüften Installer veröffentlichen (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-setup-windows
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -3003,7 +3008,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-windows-release-check-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -3297,7 +3302,7 @@ jobs:
       - name: Gebundenen App-Baum laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-input-${{ matrix.runner_arch }}
           SOLIDON_TARGET: app-input
         run: |
@@ -3584,7 +3589,7 @@ jobs:
       - name: Freigegebenen App-Baum intern übergeben (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-signed-${{ matrix.runner_arch }}
           SOLIDON_IF_EMPTY: error
         run: |
@@ -3628,7 +3633,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-macos-app-sign-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -3703,7 +3708,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -3721,7 +3726,7 @@ jobs:
         if: env.MACOS_SIGNING_MODE != 'unsigned'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-signed-${{ matrix.runner_arch }}
           SOLIDON_TARGET: app-input
         run: |
@@ -3736,7 +3741,7 @@ jobs:
         if: env.MACOS_SIGNING_MODE == 'unsigned'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-input-${{ matrix.runner_arch }}
           SOLIDON_TARGET: app-input
         run: |
@@ -3799,7 +3804,7 @@ jobs:
         if: env.MACOS_SIGNING_MODE == 'unsigned'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-final-private-${{ matrix.runner_arch }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -3827,7 +3832,7 @@ jobs:
         if: env.MACOS_SIGNING_MODE != 'unsigned'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-installer-input-${{ matrix.runner_arch }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -3848,7 +3853,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-macos-package-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -4138,7 +4143,7 @@ jobs:
       - name: Gebundenen Installer laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-installer-input-${{ matrix.runner_arch }}
           SOLIDON_TARGET: installer-input
         run: |
@@ -4342,7 +4347,7 @@ jobs:
       - name: Finalen Mac-Bau intern übergeben (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-final-private-${{ matrix.runner_arch }}
           SOLIDON_IF_EMPTY: error
         run: |
@@ -4386,7 +4391,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-macos-installer-sign-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
@@ -4467,7 +4472,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -4498,7 +4503,7 @@ jobs:
       - name: Finalen Installer laden (öffnen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-final-private-${{ matrix.runner_arch }}
           SOLIDON_TARGET: release-download
         run: |
@@ -4513,7 +4518,7 @@ jobs:
         if: env.MACOS_SIGNING_MODE != 'unsigned'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-signed-${{ matrix.runner_arch }}
           SOLIDON_TARGET: app-download
         run: |
@@ -4528,7 +4533,7 @@ jobs:
         if: env.MACOS_SIGNING_MODE == 'unsigned'
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-app-input-${{ matrix.runner_arch }}
           SOLIDON_TARGET: app-download
         run: |
@@ -4624,7 +4629,7 @@ jobs:
       - name: Geprüften Mac-Bau veröffentlichen (verschließen)
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: solidon3d-macos-${{ matrix.runner_arch }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -4644,7 +4649,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-build-macos-release-check-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |

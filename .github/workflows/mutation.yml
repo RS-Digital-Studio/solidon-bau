@@ -2,7 +2,7 @@
 # Nicht von Hand bearbeiten; die Begründungen stehen in der Quelle.
 
 name: Mutationstests
-run-name: Solidon ${{ inputs.event }} ${{ inputs.ref }} ${{ inputs.sha }} ${{ inputs.selection }} ${{ inputs.nonce }}
+run-name: Solidon ${{ inputs.event }} ${{ inputs.ref }} ${{ inputs.sha }} ${{ inputs.selection }} ${{ inputs.nonce }} platz${{ inputs.slot }}
 
 on:
   workflow_dispatch:
@@ -33,6 +33,11 @@ on:
         type: choice
         options: [auto, manual]
         required: true
+      slot:
+        description: "Platz des Laufs: sein Geheimnis und seine Gruppe"
+        type: choice
+        options: ['1', '2']
+        required: true
       module:
         description: "Ein Modul aus [tool.mutmut] only_mutate oder all"
         type: choice
@@ -44,7 +49,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: solidon-bau
+  group: solidon-bau-${{ inputs.slot }}
   cancel-in-progress: false
 
 jobs:
@@ -123,7 +128,7 @@ jobs:
       - name: Quelle entschlüsseln
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_INPUTS: ${{ toJSON(github.event.inputs) }}
           SOLIDON_TARGET: .
         run: |
@@ -246,7 +251,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: mutation-report-${{ matrix.digits }}
           SOLIDON_IF_EMPTY: error
           SOLIDON_HIDDEN: "false"
@@ -267,7 +272,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOLIDON_BAU_KEY: ${{ secrets.SOLIDON_BAU_KEY }}
+          SOLIDON_BAU_KEY: ${{ secrets[format('SOLIDON_BAU_KEY{0}', github.event.inputs.slot == '2' && '_2' || '')] }}
           SOLIDON_ARTIFACT: protokoll-mutation-mutation-${{ strategy.job-index }}
           SOLIDON_IF_EMPTY: ignore
         run: |
