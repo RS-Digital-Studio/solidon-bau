@@ -38,6 +38,11 @@ on:
         type: boolean
         required: false
         default: false
+      without_service:
+        description: "Fassung für das Ende des Aktivierungsdienstes: jeder gültige Kaufcode ohne Geräteaktivierung (RM-2124, nur auf Ansage)"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -156,6 +161,22 @@ jobs:
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '02', '--shell', 'default']
+          sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
+      - name: Sicherheitsmeldungen der festen Fassungen
+        if: ${{ !cancelled() }}
+        shell: python
+        env:
+          SOLIDON_STEP_NAME: "Sicherheitsmeldungen der festen Fassungen"
+        run: |
+          import os
+          import subprocess
+          import sys
+
+          script = r'''
+          python tools/advisories.py
+          '''
+          command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
+                     '--number', '03', '--shell', 'default']
           sys.exit(subprocess.run(command, input=script[1:].encode('utf-8')).returncode)
       - name: Protokoll verschließen
         if: always()
@@ -986,7 +1007,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2]
+        shard: [0, 1, 2, 3, 4, 5]
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
@@ -1077,7 +1098,7 @@ jobs:
 
           script = r'''
           set -euo pipefail
-          python tools/run_suite_isolated.py --release --ci-group windowed --shard-index ${{ matrix.shard }} --shard-count 3 --report-dir reports/windows-${{ matrix.shard }}
+          python tools/run_suite_isolated.py --release --ci-group windowed --shard-index ${{ matrix.shard }} --shard-count 6 --report-dir reports/windows-${{ matrix.shard }}
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '03', '--shell', 'bash']
@@ -1273,7 +1294,7 @@ jobs:
 
   package:
     name: Paket (${{ matrix.os }})
-    needs: [quelle, quality, suite, window-contracts, windows, linux-keyring, macos-minimum]
+    needs: [quelle]
     if: inputs.tests_only != true && (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -1381,14 +1402,7 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt -e ".[geom,ui,brep]"
-          # Auch hier die Constraints, und hier besonders: `constraints.txt`
-          # nagelt `pyinstaller` und `pyinstaller-hooks-contrib` fest, und
-          # gerade dessen Hooks entscheiden, welche Metadaten und Datendateien
-          # ins Paket wandern. Ein Bauwerkzeug von morgen kann anderes
-          # einpacken als das von heute, ohne dass sich eine Zeile Code ändert
-          # — das war die einzige ungepinnte Installationszeile des Workflows.
-          python -m pip install -c constraints.txt pyinstaller
+          python tools/hash_lock.py --install
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '03', '--shell', 'default']
@@ -1403,9 +1417,8 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt cython setuptools
           python tools/build_slice_core.py
-          python tools/build_licence_module.py
+          python tools/build_licence_module.py ${{ github.event.inputs.event == 'workflow_dispatch' && inputs.without_service == true && '--ohne-dienst' || '' }}
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '04', '--shell', 'default']
@@ -2060,7 +2073,7 @@ jobs:
           script = r'''
           set -euo pipefail
           app_id=$(python -c "from app.branding import APP_ID; print(APP_ID)")
-          python -m pip install -c constraints.txt keyring
+          python -m pip install --require-hashes -c packaging/build-constraints.txt keyring
           dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --flatpak "$1" --qa-ci-channel flatpak' -- "$app_id"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -2287,7 +2300,7 @@ jobs:
           script = r'''
           set -euo pipefail
           appimage=$(find linux-input -maxdepth 1 -type f -name '*.AppImage')
-          python -m pip install -c constraints.txt keyring
+          python -m pip install --require-hashes -c packaging/build-constraints.txt keyring
           dbus-run-session -- bash -c 'eval "$(printf "\n" | gnome-keyring-daemon --unlock --components=secrets)" && xvfb-run -a --server-args="-screen 0 1920x1080x24" python tools/check_frozen_mcp.py --executable "$1" --qa-ci-channel appimage-${{ matrix.os }}' -- "$appimage"
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
@@ -2356,7 +2369,7 @@ jobs:
 
   linux-release-check:
     name: Linux-Releaseakte prüfen
-    needs: [quelle, package, linux-flatpak, linux-release-start]
+    needs: [quelle, package, linux-flatpak, linux-release-start, quality, suite, window-contracts, windows, linux-keyring, macos-minimum]
     if: inputs.tests_only != true && (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -2415,7 +2428,7 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt -e ".[geom,ui,brep]" pyinstaller
+          python tools/hash_lock.py --install
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '01', '--shell', 'default']
@@ -2777,7 +2790,7 @@ jobs:
           script = r'''
           $ErrorActionPreference = 'Stop'
           $target = Join-Path $env:RUNNER_TEMP 'Solidon3D-installed'
-          python -m pip install -c source/constraints.txt keyring
+          python -m pip install --require-hashes -c source/packaging/build-constraints.txt keyring
           if ($LASTEXITCODE -ne 0) { throw "Der QA-Schlüsselbund ist nicht vollständig installiert." }
           python source/tools/check_frozen_mcp.py --executable (Join-Path $target 'Solidon3D.exe') --qa-ci-channel windows-installer
           if ($LASTEXITCODE -ne 0) { throw "Die MCP-Prüfung der installierten Anwendung ist rot." }
@@ -2844,7 +2857,7 @@ jobs:
 
   windows-release-check:
     name: Windows-Releaseakte prüfen
-    needs: [quelle, windows-installer]
+    needs: [quelle, windows-installer, quality, suite, window-contracts, windows, linux-keyring, macos-minimum]
     if: inputs.tests_only != true && (success())
     runs-on: windows-latest
     timeout-minutes: 120
@@ -2903,7 +2916,7 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt -e ".[geom,ui,brep]" pyinstaller
+          python tools/hash_lock.py --install
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '01', '--shell', 'default']
@@ -3011,7 +3024,7 @@ jobs:
 
   macos-app-sign:
     name: macOS-Anwendung signieren (${{ matrix.machine_arch }})
-    needs: package
+    needs: [package, quality, suite, window-contracts, windows, linux-keyring, macos-minimum]
     if: >-
       inputs.tests_only != true && (
         (startsWith(github.event.inputs.ref, 'refs/tags/') || github.event.inputs.event == 'workflow_dispatch') &&
@@ -4394,10 +4407,16 @@ jobs:
 
   macos-release-check:
     name: macOS-Releaseakte prüfen (${{ matrix.machine_arch }})
-    needs: [quelle, macos-package, macos-installer-sign]
+    needs: [quelle, macos-package, macos-installer-sign, quality, suite, window-contracts, windows, linux-keyring, macos-minimum]
     if: >-
       inputs.tests_only != true && (
       always() && needs.macos-package.result == 'success' &&
+      needs.quality.result == 'success' &&
+      needs.suite.result == 'success' &&
+      needs.window-contracts.result == 'success' &&
+      needs.windows.result == 'success' &&
+      needs.linux-keyring.result == 'success' &&
+      needs.macos-minimum.result == 'success' &&
       ((((github.event.inputs.ref != 'refs/heads/main' && !startsWith(github.event.inputs.ref, 'refs/tags/')) || vars.MACOS_SIGNING_MODE == '' || vars.MACOS_SIGNING_MODE == 'unsigned') && needs.macos-installer-sign.result == 'skipped') ||
        ((github.event.inputs.ref == 'refs/heads/main' || startsWith(github.event.inputs.ref, 'refs/tags/')) && (vars.MACOS_SIGNING_MODE == 'signed' || vars.MACOS_SIGNING_MODE == 'notarized') && needs.macos-installer-sign.result == 'success')))
     runs-on: ${{ matrix.os }}
@@ -4466,7 +4485,7 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt -e ".[geom,ui,brep]" pyinstaller
+          python tools/hash_lock.py --install
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
                      '--number', '01', '--shell', 'default']
@@ -4596,7 +4615,7 @@ jobs:
           import sys
 
           script = r'''
-          python -m pip install -c constraints.txt keyring
+          python -m pip install --require-hashes -c packaging/build-constraints.txt keyring
           python tools/check_frozen_mcp.py --executable /Applications/Solidon3D.app --qa-ci-channel macos-installed-${{ runner.arch }}
           '''
           command = [os.environ['SOLIDON_PYTHON'], os.environ['SOLIDON_TOOL'], 'step',
