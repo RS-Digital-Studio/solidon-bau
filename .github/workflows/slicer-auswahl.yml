@@ -201,7 +201,13 @@ jobs:
             fi
             target="/Applications/${3:-$(basename "$bundle")}"
             sudo cp -R "$bundle" "$target"
-            hdiutil detach /Volumes/slicer
+            # Spotlight oder der Kopiervorgang halten das Abbild manchmal noch („Resource busy“):
+            # dreimal mit Pause versuchen, dann erzwingen, sonst scheitert das nächste Einhängen.
+            for attempt in 1 2 3; do
+              hdiutil detach /Volumes/slicer && break
+              sleep 5
+              [ "$attempt" = 3 ] && hdiutil detach /Volumes/slicer -force
+            done
             sudo xattr -dr com.apple.quarantine "$target" 2>/dev/null || true
             echo "installiert: $target"
           }
