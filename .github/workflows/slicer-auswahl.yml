@@ -189,7 +189,15 @@ jobs:
             fetch "$1" "$2" "$RUNNER_TEMP/slicer.dmg"
             # Die Lizenzabfrage mancher Abbilder will ein „Y“; yes endet am
             # geschlossenen Rohr, und pipefail zählte das als Fehler.
-            { yes || true; } | hdiutil attach "$RUNNER_TEMP/slicer.dmg" -nobrowse -noverify -mountpoint /Volumes/slicer > /dev/null
+            # Das Gerät (/dev/diskN) aus der Ausgabe merken: Ausgehängt wird darüber, nicht
+            # über den Einhängepunkt. awk liest bis zum Ende, sonst endete hdiutil am
+            # geschlossenen Rohr.
+            device=$({ yes || true; } | hdiutil attach "$RUNNER_TEMP/slicer.dmg" -nobrowse -noverify -mountpoint /Volumes/slicer \
+              | awk '/^\/dev\/disk/ && !found { found = $1 } END { print found }')
+            if [ -z "$device" ]; then
+              echo "::error::Das Abbild nennt kein Gerät."
+              exit 1
+            fi
             # PrusaSlicer legt sein Bündel eine Ebene tiefer ab. find hört
             # selbst beim ersten Treffer auf; ein `| head` endete unter
             # pipefail mit 141, sobald find danach noch schrieb.
@@ -203,10 +211,12 @@ jobs:
             sudo cp -R "$bundle" "$target"
             # Spotlight oder der Kopiervorgang halten das Abbild manchmal noch („Resource busy“):
             # dreimal mit Pause versuchen, dann erzwingen, sonst scheitert das nächste Einhängen.
+            # Über das Gerät: Ein gescheiterter Versuch hängt den Einhängepunkt schon aus,
+            # das Gerät bleibt, und der Pfad gäbe danach nur noch „No such file“.
             for attempt in 1 2 3; do
-              hdiutil detach /Volumes/slicer && break
+              hdiutil detach "$device" && break
               sleep 5
-              [ "$attempt" = 3 ] && hdiutil detach /Volumes/slicer -force
+              [ "$attempt" = 3 ] && hdiutil detach "$device" -force
             done
             sudo xattr -dr com.apple.quarantine "$target" 2>/dev/null || true
             echo "installiert: $target"
