@@ -73,6 +73,38 @@ _GLOB = re.compile(r"[*?\[]")
 #: von pytest, mypy und ruff, die nur aus Zahlen und festen Wörtern bestehen.
 _PYTEST_PART = r"\d+ (?:passed|failed|skipped|deselected|xfailed|xpassed|errors?|warnings?|rerun)"
 _PYTEST_TIME = r"(?: in \d+(?:\.\d+)?s(?: \(\d+:\d\d:\d\d\))?)"
+#: Die Zeilen des C#-Laufs (``csharp-plattformen.yml``, Schritte unter ``port/ci/``):
+#: nur Zahlen, Ausgänge und feste Wörter, keine Namen von Dateien, Tests oder Pfaden.
+#: Sollwertdateien stehen als Nummer, Testprojekte als Zahlenfolge.
+_CSHARP_LINES = (
+    r"Schlüssel für OpenCASCADE bestimmt\.",
+    r"OpenCASCADE: (?:neu gebaut|aus dem Zwischenspeicher|Zwischenspeicher ohne bekannte "
+    r"Prüfsumme verworfen, neu gebaut), nach \d+ s",
+    r"Nativ: GEOS, Manifold und wgpu nach \d+ s",
+    r"Nativ geprüft: \d+ Bibliotheken, unter Windows nur gezählt",
+    r"Nativ geprüft: \d+ Bibliotheken, \d+ Suchpfade falsch, \d+ Abhängigkeiten fehlen, "
+    r"\d+ Übersetzungen ohne Schalter, \d+ verschmolzene Befehle, wgpu \d+",
+    r"Schalter von OpenCASCADE: aus dem (?:Bau|Stempel)",
+    r"Stapel: (?:Anwendung|Kommandozeile) \d+ KiB, Bezug \d+ KiB",
+    r"Stapel: Arbeitsfaden \d+ KiB bei \d+ Fäden, Bezug \d+ KiB",
+    r"Bau: Exit -?\d+ nach \d+ s, \d+ Warnungen, \d+ Fehler",
+    r"Testlauf: Exit -?\d+ nach \d+ s",
+    r"Tests: \d+ gesamt, \d+ grün, \d+ rot, \d+ übersprungen; "
+    r"\d+ von \d+ Testprojekten berichtet",
+    r"Testprojekte je gesamt/grün/rot/übersprungen:(?: \d+/\d+/\d+/\d+)*",
+    r"Sollwerte: \d+ Dateien, \d+ mit Abweichung, \d+ rote Tests ohne Datei"
+    r"(?:; Abweichung in Datei \d+:\d+(?: \d+:\d+)*)?",
+    r"Übersprungen: \d+ erwartet, \d+ unerwartet",
+    r"Maschinencode Kommandozeile: Exit -?\d+ nach \d+ ms, \d+ KB, \d+ Warnungen, "
+    r"Kerne (?:geladen|fehlen)",
+    r"Maschinencode Anwendung: Exit -?\d+ nach \d+ ms, \d+ KB, \d+ Warnungen, "
+    r"Grafik (?:gefunden|keine|ohne Bibliothek)",
+    r"Fenster: Messwerkzeug gebaut, Exit \d+ nach \d+ s",
+    r"Fenster (?:X11|XWayland|macOS): \d+ von \d+ Proben bestanden, \d+ nicht prüfbar",
+    r"Fenster (?:X11|XWayland|macOS): ohne Ergebnis, "
+    r"(?:Exit \d+|Xvfb kam nicht hoch|weston kam nicht hoch)",
+    r"Schlüsselbund: \d+ von \d+ Proben gleich, Probeeintrag (?:entfernt|nicht entfernt)",
+)
 _SAFE_LINE = re.compile(
     "|".join(
         (
@@ -84,6 +116,7 @@ _SAFE_LINE = re.compile(
             r"Found \d+ errors?\.",
             r"\d+ files? (?:already formatted|would be reformatted|left unchanged)"
             r"(?:, \d+ files? (?:already formatted|would be reformatted|left unchanged))*",
+            *_CSHARP_LINES,
         )
     )
 )

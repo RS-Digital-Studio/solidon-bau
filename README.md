@@ -10,6 +10,11 @@ ebenfalls verschlüsselt, und ins Protokoll eines Schritts schreibt er nur Zahle
 seinen Ausgang. Läufe startet allein der Betreiber; es gibt keine Auslöser für
 Pushes, Pull Requests oder Zeitpläne.
 
+Ein Zwischenspeicher von Actions hält nur Bauergebnisse fremder Bibliotheken aus
+öffentlichem Quellstand: Der Lauf `csharp-plattformen.yml` legt dort OpenCASCADE ab,
+was eigenen Code enthält, baut jeder Lauf neu. Ein Eintrag wird nur benutzt, wenn die
+Prüfsumme seines Inhalts in der verschlüsselten Quelle steht.
+
 Alles hier wird aus dem privaten Repository erzeugt. Änderungen von Hand gehen beim
 nächsten Abgleich verloren.
 
